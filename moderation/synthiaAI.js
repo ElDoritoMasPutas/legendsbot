@@ -65,25 +65,33 @@ class EnhancedSynthiaAI {
         };
 
         try {
-            // Skip analysis for very short messages or common phrases
+            // FIXED: Skip analysis for very short messages, common phrases, or Pokemon files
             if (content.length < 3) {
                 analysis.processingTime = Date.now() - startTime;
                 return analysis;
             }
 
-            // FIXED: Skip analysis for common gaming/trading terms
+            // FIXED: Skip analysis for common gaming/trading terms AND Pokemon files
             const commonGameTerms = [
                 'trade', 'trading', 'looking for', 'lf', 'offering', 'ft', 'for trade',
                 'pokemon', 'shiny', 'legendary', 'giveaway', 'contest', 'battle',
-                'gg', 'good game', 'wp', 'well played', 'gl', 'good luck'
+                'gg', 'good game', 'wp', 'well played', 'gl', 'good luck',
+                // Pokemon file extensions
+                '.pk9', '.pk8', '.pk7', '.pk6', '.pk5', '.pk4', '.pk3',
+                '.pb8', '.pb7', '.pa8', '.pa7', '.pkm', '.3gpkm'
             ];
             
             const lowerContent = content.toLowerCase();
             const isCommonGameTerm = commonGameTerms.some(term => lowerContent.includes(term));
             
-            if (isCommonGameTerm && content.length < 50) {
-                console.log(`⚪ Skipping analysis for common game term: "${content}"`);
+            // FIXED: More specific Pokemon file detection
+            const pokemonFilePattern = /\.(pk[3-9]|pb[78]|pa[78]|pkm|3gpkm|ck3|bk4|rk4|sk2|xk3)\b/i;
+            const isPokemonFile = pokemonFilePattern.test(content);
+            
+            if ((isCommonGameTerm && content.length < 50) || isPokemonFile) {
+                console.log(`⚪ Skipping analysis for Pokemon content: "${content}"`);
                 analysis.processingTime = Date.now() - startTime;
+                analysis.reasoning.push('Pokemon file or gaming content detected - skipped analysis');
                 return analysis;
             }
 
