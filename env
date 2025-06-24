@@ -1,0 +1,9 @@
+# Discord Bot Configuration
+DISCORD_TOKEN=
+
+# Optional: Additional Configuration
+AUTO_MODERATION=true
+STRICT_MODE=true
+MAX_WARNINGS=3
+MYMEMORY_EMAIL=eldorito12345@outlook.com
+DEEPL_API_KEY=36db60c9-68c7-4a66-b164-11580dc68c48:fx
