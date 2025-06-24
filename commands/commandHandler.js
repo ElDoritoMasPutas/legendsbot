@@ -107,6 +107,21 @@ const commands = [
         .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageMessages),
 
     new SlashCommandBuilder()
+        .setName('test-pokemon')
+        .setDescription('Test Pokemon file detection system')
+        .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageMessages),
+
+    new SlashCommandBuilder()
+        .setName('test-translate')
+        .setDescription('Test the translation system with sample text')
+        .addStringOption(option =>
+            option.setName('text')
+                .setDescription('Text to test translation with')
+                .setRequired(true)
+        )
+        .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageMessages),
+
+    new SlashCommandBuilder()
         .setName('setup-wizard')
         .setDescription('Interactive setup wizard for Enhanced Synthia configuration')
         .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild)
@@ -249,19 +264,77 @@ async function handleTextCommand(message, synthiaTranslator, synthiaAI, serverLo
             );
             break;
 
+        case 'autotranslate':
+        case 'auto-translate':
+        case 'toggletranslate':
+            if (!message.member?.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
+                await message.reply('❌ You need Manage Server permission to toggle auto-translation.');
+                return;
+            }
+
+            const serverConfig = serverLogger.getServerConfig(message.guild.id);
+            const currentAutoTranslate = serverConfig ? serverConfig.autoTranslate : false;
+            const newAutoTranslate = !currentAutoTranslate;
+            
+            serverLogger.updateServerSetting(message.guild.id, 'autoTranslate', newAutoTranslate);
+            
+            await message.reply(`${newAutoTranslate ? '✅ Enabled' : '❌ Disabled'} automatic translation for foreign messages.`);
+            
+            await discordLogger.sendLog(
+                message.guild,
+                'success',
+                '🌍 Auto-Translation Settings Changed',
+                `Auto-translation has been ${newAutoTranslate ? 'enabled' : 'disabled'} by ${message.author.tag}`,
+                [
+                    { name: '👤 Changed By', value: `${message.author.tag}`, inline: true },
+                    { name: '🔧 New Status', value: newAutoTranslate ? '✅ Enabled' : '❌ Disabled', inline: true },
+                    { name: '📅 Changed At', value: new Date().toLocaleString(), inline: true }
+                ]
+            );
+            break;
+
+        case 'config':
+        case 'settings':
+            if (!message.member?.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
+                await message.reply('❌ You need Manage Server permission to view server configuration.');
+                return;
+            }
+
+            const currentConfig = serverLogger.getServerConfig(message.guild.id);
+            const logChannels = serverLogger.getLogChannels(message.guild.id);
+            
+            const configEmbed = new EmbedBuilder()
+                .setTitle(`🔧 Server Configuration - ${message.guild.name}`)
+                .setColor(config.colors.info)
+                .addFields(
+                    { name: '📡 Log Channels', value: logChannels.length > 0 ? logChannels.map(id => `<#${id}>`).join('\n') : 'None configured', inline: true },
+                    { name: '🛡️ Auto-Moderation', value: serverLogger.isAutoModerationEnabled(message.guild.id) ? '✅ Enabled' : '❌ Disabled', inline: true },
+                    { name: '🌍 Auto-Translation', value: currentConfig?.autoTranslate ? '✅ Enabled' : '❌ Disabled', inline: true },
+                    { name: '🗣️ Default Language', value: synthiaTranslator.enhancedAPI.supportedLanguages.get(currentConfig?.defaultTranslateTo || 'en') || 'English', inline: true },
+                    { name: '🔍 Elongated Detection', value: currentConfig?.elongatedDetection !== false ? '✅ Enabled' : '❌ Disabled', inline: true },
+                    { name: '🌐 Multi-Language', value: currentConfig?.multiLanguage !== false ? '✅ Enabled' : '❌ Disabled', inline: true }
+                )
+                .setFooter({ text: 'Use commands to change these settings' })
+                .setTimestamp();
+
+            await message.reply({ embeds: [configEmbed] });
+            break;
+
         case 'help':
             const helpEmbed = new EmbedBuilder()
                 .setTitle('🧠 Enhanced Synthia v9.0 Help')
                 .setDescription('Multi-API Intelligence Moderation & Translation System')
                 .addFields(
-                    { name: '🚀 Quick Setup', value: '`/setup-wizard` - **Interactive setup guide**\n`!synthia loghere` - Set log channel\n`!synthia removelog <#channel>` - Remove log channel\n`!synthia status` - System status' },
-                    { name: '🛡️ Moderation', value: '`!synthia togglemod` - **Toggle auto-moderation**\n`/toggle-automod` - Slash command version' },
-                    { name: '🌍 Translation', value: '`/translate` - **Main translation command**\n`/supported-languages` - List all languages\n`/auto-translate` - Toggle auto-translation' },
-                    { name: '📊 Analysis', value: '`/synthia-analysis` - Analyze user\n`/test-detection` - Test detection\n`/api-status` - API status' },
-                    { name: '🔧 System', value: '`!synthia debug` - Debug configuration\n`!synthia testlog` - Test logging\n`!synthia fixlogs` - Auto-repair logs' }
+                    { name: '🚀 Quick Setup', value: '`/setup-wizard` - **Interactive setup guide**\n`!synthia loghere` - Set log channel\n`!synthia removelog <#channel>` - Remove log channel\n`!synthia status` - System status\n`!synthia config` - View current settings' },
+                    { name: '🛡️ Moderation', value: '`!synthia togglemod` - **Toggle auto-moderation**\n`/toggle-automod` - Slash command version\n`!synthia automod` - Check current status' },
+                    { name: '🌍 Translation', value: '`/translate` - **Main translation command**\n`!synthia autotranslate` - **Toggle auto-translation**\n`/auto-translate` - Slash command version\n`/supported-languages` - List all languages\n`/set-server-language` - Set default language' },
+                    { name: '📊 Analysis', value: '`/synthia-analysis` - Analyze user\n`/test-detection` - Test detection\n`/api-status` - API status\n`/translation-stats` - Translation performance' },
+                    { name: '🔧 System', value: '`!synthia debug` - Debug configuration\n`!synthia testlog` - Test logging\n`!synthia fixlogs` - Auto-repair logs\n`!synthia config` - View all settings' },
+                    { name: '🎮 Pokemon Support', value: '`!synthia testpokemon` - **Test Pokemon file detection**\n`!synthia test-pokemon` - Alternative command\n\n**✅ FIXED: Pokemon files (.pk9, .pk8, .pb8, etc.) are now WHITELISTED and won\'t trigger bans!**' },
+                    { name: '🎮 Common Commands', value: '**Toggle Auto-Translation:**\n• `!synthia autotranslate` (text)\n• `/auto-translate enabled:false` (slash)\n\n**Check Settings:**\n• `!synthia config` - View all settings\n• `!synthia status` - System status\n\n**Test Pokemon Files:**\n• `!synthia testpokemon` - Verify Pokemon file safety' }
                 )
                 .setColor(config.colors.info)
-                .setFooter({ text: '💡 Enhanced with reduced false positives!' });
+                .setFooter({ text: '💡 Enhanced with Pokemon file support & reduced false positives!' });
             
             await message.reply({ embeds: [helpEmbed] });
             break;
@@ -364,6 +437,56 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                 await interaction.editReply({ embeds: [translateEmbed] });
                 break;
 
+            case 'auto-translate':
+                await interaction.deferReply();
+                
+                const autoTranslateEnabled = interaction.options.getBoolean('enabled');
+                serverLogger.updateServerSetting(interaction.guild.id, 'autoTranslate', autoTranslateEnabled);
+                
+                await interaction.editReply(`${autoTranslateEnabled ? '✅ Enabled' : '❌ Disabled'} automatic translation for foreign messages.`);
+                
+                await discordLogger.sendLog(
+                    interaction.guild,
+                    'success',
+                    '🌍 Auto-Translation Settings Changed',
+                    `Auto-translation has been ${autoTranslateEnabled ? 'enabled' : 'disabled'} by ${interaction.user.tag}`,
+                    [
+                        { name: '👤 Changed By', value: `${interaction.user.tag}`, inline: true },
+                        { name: '🔧 New Status', value: autoTranslateEnabled ? '✅ Enabled' : '❌ Disabled', inline: true },
+                        { name: '📅 Changed At', value: new Date().toLocaleString(), inline: true }
+                    ]
+                );
+                break;
+
+            case 'set-server-language':
+                await interaction.deferReply();
+                
+                const serverLanguage = interaction.options.getString('language');
+                const serverLangCode = synthiaTranslator.parseLanguageInput(serverLanguage);
+                
+                if (!serverLangCode) {
+                    await interaction.editReply(`❌ Language "${serverLanguage}" not supported. Use \`/supported-languages\` to see available options.`);
+                    return;
+                }
+                
+                serverLogger.updateServerSetting(interaction.guild.id, 'defaultTranslateTo', serverLangCode);
+                const languageName = synthiaTranslator.enhancedAPI.supportedLanguages.get(serverLangCode);
+                
+                await interaction.editReply(`✅ Server default translation language set to **${languageName}** (\`${serverLangCode}\`)`);
+                
+                await discordLogger.sendLog(
+                    interaction.guild,
+                    'success',
+                    '🌍 Server Language Changed',
+                    `Default translation language changed to ${languageName} by ${interaction.user.tag}`,
+                    [
+                        { name: '👤 Changed By', value: `${interaction.user.tag}`, inline: true },
+                        { name: '🌍 New Language', value: `${languageName} (${serverLangCode})`, inline: true },
+                        { name: '📅 Changed At', value: new Date().toLocaleString(), inline: true }
+                    ]
+                );
+                break;
+
             case 'toggle-automod':
                 await interaction.deferReply();
                 
@@ -379,22 +502,41 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                     `Auto-moderation has been ${autoModEnabled ? 'enabled' : 'disabled'} by ${interaction.user.tag}`,
                     [
                         { name: '👤 Changed By', value: `${interaction.user.tag}`, inline: true },
-                        { name: '🔧 New Status', value: autoModEnabled ? '✅ Enabled' : '❌ Disabled', inline: true }
+                        { name: '🔧 New Status', value: autoModEnabled ? '✅ Enabled' : '❌ Disabled', inline: true },
+                        { name: '📅 Changed At', value: new Date().toLocaleString(), inline: true }
                     ]
                 );
+                break;
+
+            case 'supported-languages':
+                await interaction.deferReply();
+                
+                const supportedLangs = synthiaTranslator.getSupportedLanguages();
+                const languageList = supportedLangs
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map(lang => `**${lang.name}** (\`${lang.code}\`)`)
+                    .join('\n');
+                
+                const languagesEmbed = new EmbedBuilder()
+                    .setTitle('🌍 Supported Languages')
+                    .setDescription(`**Enhanced Multi-API Translation supports ${supportedLangs.length} languages:**\n\n${languageList}`)
+                    .setColor(config.colors.multi_language)
+                    .setFooter({ text: 'Use language names or codes in translation commands' });
+                
+                await interaction.editReply({ embeds: [languagesEmbed] });
                 break;
 
             case 'test-detection':
                 await interaction.deferReply();
                 
-                const testText = interaction.options.getString('text');
-                const testAnalysis = await synthiaAI.analyzeMessage(testText, interaction.user, interaction.channel, { guild: interaction.guild });
+                const detectionTestText = interaction.options.getString('text');
+                const testAnalysis = await synthiaAI.analyzeMessage(detectionTestText, interaction.user, interaction.channel, { guild: interaction.guild });
                 
                 const detectionEmbed = new EmbedBuilder()
                     .setTitle('🔍 Enhanced Detection Test Results')
                     .setColor(config.colors.ai_analysis)
                     .addFields(
-                        { name: '📝 Text', value: testText.slice(0, 1024), inline: false },
+                        { name: '📝 Text', value: detectionTestText.slice(0, 1024), inline: false },
                         { name: '🌍 Language', value: testAnalysis.language.originalLanguage, inline: true },
                         { name: '⚖️ Threat Level', value: `${testAnalysis.threatLevel}/10`, inline: true },
                         { name: '🎯 Confidence', value: `${testAnalysis.confidence}%`, inline: true },
@@ -412,6 +554,109 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                 }
                 
                 await interaction.editReply({ embeds: [detectionEmbed] });
+                break;
+
+            case 'test-pokemon':
+                await interaction.deferReply();
+                
+                const pokemonTestCases = [
+                    'Here is my shiny Charizard.pk9',
+                    'Trading legendary.pk8 for shiny',
+                    'My Pokemon save.pb8 file',
+                    'Check out this team.pa8',
+                    'Uploading my data.pk7',
+                    'Free shiny Pokemon.pk9 download',
+                    'scam.pk9 link click here'
+                ];
+
+                let pokemonTestResults = [];
+
+                for (const testCase of pokemonTestCases) {
+                    const testAnalysis = await synthiaAI.analyzeMessage(testCase, interaction.user, interaction.channel, { guild: interaction.guild });
+                    
+                    pokemonTestResults.push({
+                        text: testCase,
+                        threatLevel: testAnalysis.threatLevel,
+                        action: testAnalysis.action || 'none',
+                        reasoning: testAnalysis.reasoning.length > 0 ? testAnalysis.reasoning[0] : 'No issues detected'
+                    });
+                }
+
+                const pokemonEmbed = new EmbedBuilder()
+                    .setTitle('🧪 Pokemon File Detection Test')
+                    .setDescription('Testing Pokemon file extension whitelisting')
+                    .setColor(config.colors.success);
+
+                for (const result of pokemonTestResults) {
+                    const status = result.threatLevel === 0 ? '✅' : '⚠️';
+                    pokemonEmbed.addFields({
+                        name: `${status} "${result.text}"`,
+                        value: `Threat: ${result.threatLevel}/10 | Action: ${result.action}\nReason: ${result.reasoning}`,
+                        inline: false
+                    });
+                }
+
+                pokemonEmbed.addFields({
+                    name: '📋 Expected Results',
+                    value: '✅ Pokemon files should show "Threat: 0/10"\n✅ Only actual scam attempts should be flagged\n✅ Legitimate Pokemon trading should be safe',
+                    inline: false
+                });
+
+                await interaction.editReply({ embeds: [pokemonEmbed] });
+                break;
+
+            case 'test-translate':
+                await interaction.deferReply();
+                
+                const translateTestText = interaction.options.getString('text');
+                const currentServerConfig = serverLogger.getServerConfig(interaction.guild.id);
+                
+                try {
+                    // Detect language
+                    const detectedLang = synthiaTranslator.detectLanguage(translateTestText);
+                    const detectedLangName = synthiaTranslator.enhancedAPI.supportedLanguages.get(detectedLang) || detectedLang;
+                    
+                    // Test translation
+                    const translation = await synthiaTranslator.translateText(
+                        translateTestText, 
+                        currentServerConfig?.defaultTranslateTo || 'en', 
+                        detectedLang
+                    );
+                    
+                    const testEmbed = new EmbedBuilder()
+                        .setTitle('🧪 Translation System Test')
+                        .setColor(config.colors.translation)
+                        .addFields(
+                            { name: '📝 Input Text', value: translateTestText, inline: false },
+                            { name: '🌍 Detected Language', value: `${detectedLangName} (${detectedLang})`, inline: true },
+                            { name: '🎯 Target Language', value: `${synthiaTranslator.enhancedAPI.supportedLanguages.get(currentServerConfig?.defaultTranslateTo || 'en')} (${currentServerConfig?.defaultTranslateTo || 'en'})`, inline: true },
+                            { name: '🔧 Provider', value: translation.provider, inline: true },
+                            { name: '🌟 Translation Result', value: translation.translatedText, inline: false },
+                            { name: '📊 Confidence', value: `${translation.confidence}%`, inline: true },
+                            { name: '⚡ Processing Time', value: `${translation.processingTime}ms`, inline: true },
+                            { name: '🤖 Auto-Translation Status', value: currentServerConfig?.autoTranslate ? '✅ Enabled' : '❌ Disabled', inline: true }
+                        );
+                    
+                    if (translation.error) {
+                        testEmbed.addFields({ name: '❌ Error', value: translation.error, inline: false });
+                    }
+                    
+                    // Add auto-translation analysis
+                    const wouldAutoTranslate = currentServerConfig?.autoTranslate && 
+                                              detectedLang !== 'en' && 
+                                              detectedLang !== (currentServerConfig?.defaultTranslateTo || 'en');
+                    
+                    testEmbed.addFields({
+                        name: '🔄 Would Auto-Translate?',
+                        value: wouldAutoTranslate ? '✅ Yes (if threat level = 0)' : '❌ No',
+                        inline: false
+                    });
+                    
+                    await interaction.editReply({ embeds: [testEmbed] });
+                    
+                } catch (error) {
+                    await interaction.editReply(`❌ Translation test failed: ${error.message}`);
+                }
                 break;
 
             // Add other command cases...
