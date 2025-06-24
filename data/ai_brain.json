@@ -1,0 +1,536 @@
+{
+  "patterns": [
+    "https://media.discordapp.net/attachments/1294380382661116045/1382673638851084349/1.jpg?ex=684c02ac&is=684ab12c&hm=643e876636d9c07c811e6e822546d5d2e5ed58dfb080a48560d06049d895ec97&=&format=webp&width=648&height=864",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382673637928337479/2.jpg?ex=684c02ac&is=684ab12c&hm=ff275163765bbb43e8ee0b12cc24dd6baf8369a0c8eeb4787033f389056dda19&=&format=webp&width=648&height=864",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382673638150508635/3.jpg?ex=684c02ac&is=684ab12c&hm=6b07f652abb7d3b5957b6342399adea64b9114c3b73fe38f796de11e1a83022a&=&format=webp",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382673638502699140/4.jpg?ex=684c02ac&is=684ab12c&hm=fa636668f0ef52baed9294ad639e163be09e116bd091be208d2f569a6e953206&=&format=webp&width=648&height=864",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382675906094432349/1.jpg?ex=684c04c8&is=684ab348&hm=7ca961baf2513979a5105652031e0543130fb7b69cc9c2c5d5f4dbd9e194f786&=&format=webp&width=648&height=864",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382675906413461564/2.jpg?ex=684c04c8&is=684ab348&hm=e1411c632164a7d3aaf88b9aeceb248203596137d3b172e64b01afffef21958e&=&format=webp",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382675906975236106/3.jpg?ex=684c04c9&is=684ab349&hm=d23275d4bb2073c07a6e7382de4fd0247d529ceb1e090568a14ad81ce6de6128&=&format=webp",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382675907415773204/4.jpg?ex=684c04c9&is=684ab349&hm=e9eed896c0c2e910ebcb78020fdcd39682a816f4a02c99d4865282b08cf1aee8&=&format=webp&width=648&height=864",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382714361595822180/1.jpg?ex=684c2899&is=684ad719&hm=8e425d267b5e5dfb6acaee8feae32b507448346e4e6049ca9a776172fe483fb3&=&format=webp&width=648&height=864",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382714361902010378/2.jpg?ex=684c2899&is=684ad719&hm=30ee9cd59336b8d079f7e2963198842226d6dfe74a1c7537dd78fdd40a354cae&=&format=webp&width=648&height=864",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382714360849240064/3.jpg?ex=684c2899&is=684ad719&hm=b398193e4724e6d314d6d707605f8542d86cb958645494bcd2fba0281ce14dff&=&format=webp",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382714361281511484/4.jpg?ex=684c2899&is=684ad719&hm=895d7474649f2f081c3987cdf6433c14e9b494b4d5e65f8e29569650c622530a&=&format=webp&width=648&height=864",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382712744930971699/1.jpg?ex=684c2717&is=684ad597&hm=c54ccb48c914102e200dd41ec0cc4946e719a51087a68c2eff0801ff06fbfe8e&=&format=webp&width=648&height=864",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382712745324969984/2.jpg?ex=684c2718&is=684ad598&hm=cbed9dde4b45cc4b9122c440b16014b105835d335c9e3b7441a47a96c1da5358&=&format=webp",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382712745652256929/3.jpg?ex=684c2718&is=684ad598&hm=81c318b07193d2fde5e6522e6570922ec11ec5989806bae6321ee612b9f2e8c4&=&format=webp",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382712746084401243/4.jpg?ex=684c2718&is=684ad598&hm=d4d86278d914eaae27874dad1da0f5f350321ff3afa132076089a123e70b1e46&=&format=webp&width=648&height=864",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382860054549762088/2.gif?ex=684cb049&is=684b5ec9&hm=65c70e2cf8b7cf3659447664eb15cb1d776e95835eb0c0a83f51e10ff04d4883&=&width=1536&height=864",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382868674116849807/1.jpg?ex=684cb850&is=684b66d0&hm=0c614f2de1d2168998ad1474aa13d7467181807d48cfbb25df0d9d1cbb29e96c&=&format=webp&width=648&height=864",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382868673706070127/2.jpg?ex=684cb850&is=684b66d0&hm=1e5583a4592c1f20e6f4cd41e33cc4396219f41fc35250cf14e439f115d15dc6&=&format=webp&width=648&height=864",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382868674423296081/3.jpg?ex=684cb850&is=684b66d0&hm=86fb039dda92002df2e4463f40656caf409985d59725ef11fd76df18f4f14f45&=&format=webp&width=648&height=864",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382713708291162182/1.jpg?ex=684c27fd&is=684ad67d&hm=0bc396828d847e2f6d72762120b1b2e9fdba940a3c628228cf69ed835d9f762b&=&format=webp&width=648&height=864",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382713708639424606/2.jpg?ex=684c27fd&is=684ad67d&hm=810c105afaee49a339fcded1b5f7eef58bc591378d31b76886de41bc6ade4e2d&=&format=webp&width=648&height=864",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382713708915982527/3.jpg?ex=684c27fd&is=684ad67d&hm=a858c7f1da15204c081389ba760964b2aa0fcd442207b07ceaee3ca6ddc2edf3&=&format=webp",
+    "https://media.discordapp.net/attachments/1294380382661116045/1382713709226627102/4.jpg?ex=684c27fd&is=684ad67d&hm=4523e12f066353d55660d1ee5e5f73eb01c42e9d2f2cbdc8b6381b6054c22fb7&=&format=webp&width=648&height=864",
+    ".trade"
+  ],
+  "threats": [],
+  "adaptiveSensitivity": 10,
+  "threatHistory": [
+    {
+      "timestamp": 1749815543667,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749817925018,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749818200198,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749823535922,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749824033942,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749825453751,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749826110311,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749826471428,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749826487404,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749826498836,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749826564161,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749826740836,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749826772623,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749827407396,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749827535634,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749827564315,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749828486488,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749828547249,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749829274744,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749829559440,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749829675236,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749830016206,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749830055054,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749830378363,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749831361174,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749831475568,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749831686415,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749833718239,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749833836553,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749833935769,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749835001650,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749835024168,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749835155647,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749835402742,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749835422262,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749835645129,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749835876085,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749836177261,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749836210536,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749836232460,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749836569801,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749836805586,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749836954366,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749837239843,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749837676987,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749837765366,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749837838366,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749837856258,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749838354816,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749838445711,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749838644531,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749838793839,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749838994470,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749840331796,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749840754517,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749840857273,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749841241981,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749841399242,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749841565050,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749841769640,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749841963778,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749843116504,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749843812841,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749844106471,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749845737143,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749845827707,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749845940029,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749846009543,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749846092894,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749846182979,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749846659271,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749846909477,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749846932536,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749847029337,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749847303659,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749850855762,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749850863026,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749850924568,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749850938146,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749851025578,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749851118074,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749851190430,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749851209531,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749851226708,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749851227657,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749851316581,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749851523719,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749851552678,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749851577359,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749851597057,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749851652663,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749851676433,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749851782682,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749851856255,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749851928038,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749851975728,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749852004903,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749852078484,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749852085524,
+      "detected": false,
+      "action": "none"
+    },
+    {
+      "timestamp": 1749852157785,
+      "detected": false,
+      "action": "none"
+    }
+  ],
+  "falsePositiveCount": 0,
+  "version": "1.0",
+  "lastUpdated": 1749879011434
+}

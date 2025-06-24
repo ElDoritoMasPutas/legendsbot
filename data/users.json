@@ -1,0 +1,29 @@
+{
+  "users": [
+    [
+      "474584323178233908",
+      {
+        "id": "474584323178233908",
+        "violations": [],
+        "messageCount": 3,
+        "languages": {},
+        "riskScore": 0,
+        "elongatedViolations": 0,
+        "createdAt": "2025-06-14T18:53:18.845Z"
+      }
+    ],
+    [
+      "924938798050189333",
+      {
+        "id": "924938798050189333",
+        "violations": [],
+        "messageCount": 1,
+        "languages": {},
+        "riskScore": 0,
+        "elongatedViolations": 0,
+        "createdAt": "2025-06-14T18:59:59.587Z"
+      }
+    ]
+  ],
+  "savedAt": "2025-06-14T18:59:59.588Z"
+}

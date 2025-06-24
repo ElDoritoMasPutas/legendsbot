@@ -1,0 +1,477 @@
+{
+  "profiles": [
+    [
+      "1249434952844443752",
+      {
+        "userId": "1249434952844443752",
+        "messageCount": 1,
+        "violations": [
+          {
+            "timestamp": 1750706312641,
+            "threatLevel": 10,
+            "violationType": "SEVERE_TOXICITY",
+            "language": "en",
+            "elongated": false,
+            "content": "Fuck",
+            "action": "ban",
+            "multiApiUsed": false,
+            "isScam": false
+          }
+        ],
+        "riskScore": 5,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1750706312641,
+            "threatLevel": 10
+          }
+        ],
+        "multiApiTranslations": 0,
+        "createdAt": 1750706312641,
+        "lastAnalysis": 1750706312641
+      }
+    ],
+    [
+      "1255010052687921172",
+      {
+        "userId": "1255010052687921172",
+        "messageCount": 1,
+        "violations": [
+          {
+            "timestamp": 1750707832407,
+            "threatLevel": 11,
+            "violationType": "SCAM",
+            "language": "es",
+            "elongated": false,
+            "content": ".trade Charizard (M)\nBall: Poké Ball\nLevel: 38\nAbility: Solar Power\nGigantamax: Yes\n.MetLocation=40\n",
+            "action": "ban",
+            "multiApiUsed": true,
+            "provider": "DeepL",
+            "isScam": true
+          }
+        ],
+        "riskScore": 6,
+        "languageHistory": [
+          {
+            "language": "es",
+            "timestamp": 1750707832407,
+            "threatLevel": 11
+          }
+        ],
+        "multiApiTranslations": 1,
+        "createdAt": 1750707832407,
+        "lastAnalysis": 1750707832407
+      }
+    ],
+    [
+      "988128942978367488",
+      {
+        "userId": "988128942978367488",
+        "messageCount": 2,
+        "violations": [
+          {
+            "timestamp": 1750708724306,
+            "threatLevel": 1,
+            "violationType": "DISRESPECTFUL",
+            "language": "pt",
+            "elongated": false,
+            "content": "https://tenor.com/view/c00lkidd-roblox-forsaken-coolkid-insanity-gif-4428286406695657308",
+            "action": "warn",
+            "multiApiUsed": true,
+            "provider": "DeepL",
+            "isScam": false
+          },
+          {
+            "timestamp": 1750711454900,
+            "threatLevel": 1,
+            "violationType": "DISRESPECTFUL",
+            "language": "en",
+            "elongated": false,
+            "content": "Keep it up and you'll be... cooked",
+            "action": "warn",
+            "multiApiUsed": false,
+            "isScam": false
+          }
+        ],
+        "riskScore": 2,
+        "languageHistory": [
+          {
+            "language": "pt",
+            "timestamp": 1750708724306,
+            "threatLevel": 1
+          },
+          {
+            "language": "en",
+            "timestamp": 1750711454900,
+            "threatLevel": 1
+          }
+        ],
+        "multiApiTranslations": 1,
+        "createdAt": 1750708724306,
+        "lastAnalysis": 1750711454900
+      }
+    ],
+    [
+      "983852886758940672",
+      {
+        "userId": "983852886758940672",
+        "messageCount": 1,
+        "violations": [
+          {
+            "timestamp": 1750709248924,
+            "threatLevel": 11,
+            "violationType": "SCAM",
+            "language": "en",
+            "elongated": false,
+            "content": ".trade Glowking (Slowking-Galar) @ Leftovers  \nAbility: Regenerator  \nShiny: Yes  \nTera Type: Fighti",
+            "action": "ban",
+            "multiApiUsed": false,
+            "isScam": true
+          }
+        ],
+        "riskScore": 6,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1750709248924,
+            "threatLevel": 11
+          }
+        ],
+        "multiApiTranslations": 0,
+        "createdAt": 1750709248924,
+        "lastAnalysis": 1750709248924
+      }
+    ],
+    [
+      "493247273564897280",
+      {
+        "userId": "493247273564897280",
+        "messageCount": 1,
+        "violations": [
+          {
+            "timestamp": 1750709655254,
+            "threatLevel": 10,
+            "violationType": "SCAM",
+            "language": "en",
+            "elongated": false,
+            "content": ".trade",
+            "action": "ban",
+            "multiApiUsed": false,
+            "isScam": true
+          }
+        ],
+        "riskScore": 5,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1750709655254,
+            "threatLevel": 10
+          }
+        ],
+        "multiApiTranslations": 0,
+        "createdAt": 1750709655254,
+        "lastAnalysis": 1750709655254
+      }
+    ],
+    [
+      "694699734002040893",
+      {
+        "userId": "694699734002040893",
+        "messageCount": 1,
+        "violations": [
+          {
+            "timestamp": 1750710423727,
+            "threatLevel": 11,
+            "violationType": "SCAM",
+            "language": "en",
+            "elongated": false,
+            "content": ".trade Stagourd (Sawsbuck-Autumn) (M) @ Heat Rock\nBall: Nest Ball\nLevel: 100\nShiny: Yes\nAbility: Chl",
+            "action": "ban",
+            "multiApiUsed": false,
+            "isScam": true
+          }
+        ],
+        "riskScore": 6,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1750710423727,
+            "threatLevel": 11
+          }
+        ],
+        "multiApiTranslations": 0,
+        "createdAt": 1750710423727,
+        "lastAnalysis": 1750710423727
+      }
+    ],
+    [
+      "984153501208825876",
+      {
+        "userId": "984153501208825876",
+        "messageCount": 1,
+        "violations": [
+          {
+            "timestamp": 1750713611247,
+            "threatLevel": 11,
+            "violationType": "SCAM",
+            "language": "en",
+            "elongated": false,
+            "content": ".trade Mr. Mime-Galar (M)  \nAbility: Ice Body  \nLevel: 25  \nTera Type: Ice",
+            "action": "ban",
+            "multiApiUsed": false,
+            "isScam": true
+          }
+        ],
+        "riskScore": 6,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1750713611247,
+            "threatLevel": 11
+          }
+        ],
+        "multiApiTranslations": 0,
+        "createdAt": 1750713611247,
+        "lastAnalysis": 1750713611247
+      }
+    ],
+    [
+      "528709439499403279",
+      {
+        "userId": "528709439499403279",
+        "messageCount": 1,
+        "violations": [
+          {
+            "timestamp": 1750714404154,
+            "threatLevel": 10,
+            "violationType": "SCAM",
+            "language": "en",
+            "elongated": false,
+            "content": ".trade",
+            "action": "ban",
+            "multiApiUsed": false,
+            "isScam": true
+          }
+        ],
+        "riskScore": 5,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1750714404154,
+            "threatLevel": 10
+          }
+        ],
+        "multiApiTranslations": 0,
+        "createdAt": 1750714404154,
+        "lastAnalysis": 1750714404154
+      }
+    ],
+    [
+      "894701397050814554",
+      {
+        "userId": "894701397050814554",
+        "messageCount": 1,
+        "violations": [
+          {
+            "timestamp": 1750715281570,
+            "threatLevel": 10,
+            "violationType": "SCAM",
+            "language": "en",
+            "elongated": false,
+            "content": ".trade",
+            "action": "ban",
+            "multiApiUsed": false,
+            "isScam": true
+          }
+        ],
+        "riskScore": 5,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1750715281570,
+            "threatLevel": 10
+          }
+        ],
+        "multiApiTranslations": 0,
+        "createdAt": 1750715281570,
+        "lastAnalysis": 1750715281570
+      }
+    ],
+    [
+      "1385208557724504129",
+      {
+        "userId": "1385208557724504129",
+        "messageCount": 1,
+        "violations": [
+          {
+            "timestamp": 1750721783953,
+            "threatLevel": 1,
+            "violationType": "DISRESPECTFUL",
+            "language": "en",
+            "elongated": false,
+            "content": ".trade Calyrex @ Focus Sash\nBall: Ultra Ball\nLevel: 80\nShiny: No\nAbility: Unnerve\nOT: Ash\nTID: 12646",
+            "action": "warn",
+            "multiApiUsed": false,
+            "isScam": false
+          }
+        ],
+        "riskScore": 1,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1750721783953,
+            "threatLevel": 1
+          }
+        ],
+        "multiApiTranslations": 0,
+        "createdAt": 1750721783953,
+        "lastAnalysis": 1750721783953
+      }
+    ],
+    [
+      "988926706574323772",
+      {
+        "userId": "988926706574323772",
+        "messageCount": 1,
+        "violations": [
+          {
+            "timestamp": 1750723649405,
+            "threatLevel": 1,
+            "violationType": "DISRESPECTFUL",
+            "language": "en",
+            "elongated": false,
+            "content": ".bt \nCarvanha (M) @ Master Ball\nBall: Master Ball\nLevel: 100\nShiny: No\nAbility: Speed Boost\nEVs: 4 H",
+            "action": "warn",
+            "multiApiUsed": false,
+            "isScam": false
+          }
+        ],
+        "riskScore": 1,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1750723649405,
+            "threatLevel": 1
+          }
+        ],
+        "multiApiTranslations": 0,
+        "createdAt": 1750723649405,
+        "lastAnalysis": 1750723649405
+      }
+    ],
+    [
+      "682451573036810265",
+      {
+        "userId": "682451573036810265",
+        "messageCount": 1,
+        "violations": [
+          {
+            "timestamp": 1750731246316,
+            "threatLevel": 10,
+            "violationType": "SEVERE_TOXICITY",
+            "language": "en",
+            "elongated": false,
+            "content": "damn",
+            "action": "ban",
+            "multiApiUsed": false,
+            "isScam": false
+          }
+        ],
+        "riskScore": 5,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1750731246316,
+            "threatLevel": 10
+          }
+        ],
+        "multiApiTranslations": 0,
+        "createdAt": 1750731246316,
+        "lastAnalysis": 1750731246316
+      }
+    ],
+    [
+      "1121973299254136882",
+      {
+        "userId": "1121973299254136882",
+        "messageCount": 1,
+        "violations": [
+          {
+            "timestamp": 1750735847883,
+            "threatLevel": 1,
+            "violationType": "DISRESPECTFUL",
+            "language": "es",
+            "elongated": false,
+            "content": ".pokepaste https://pokepast.es/7f801fbdf286190b",
+            "action": "warn",
+            "multiApiUsed": true,
+            "provider": "DeepL",
+            "isScam": false
+          }
+        ],
+        "riskScore": 1,
+        "languageHistory": [
+          {
+            "language": "es",
+            "timestamp": 1750735847883,
+            "threatLevel": 1
+          }
+        ],
+        "multiApiTranslations": 1,
+        "createdAt": 1750735847883,
+        "lastAnalysis": 1750735847883
+      }
+    ],
+    [
+      "745943941752422463",
+      {
+        "userId": "745943941752422463",
+        "messageCount": 2,
+        "violations": [
+          {
+            "timestamp": 1750745019562,
+            "threatLevel": 1,
+            "violationType": "DISRESPECTFUL",
+            "language": "en",
+            "elongated": false,
+            "content": ".trade Wynaut @ Big Nugget\nAbility: Shadow Tag\nAdamant Nature  \n- Counter\n- Mirror Coat\n- Safeguard\n",
+            "action": "warn",
+            "multiApiUsed": false,
+            "isScam": false
+          },
+          {
+            "timestamp": 1750745502894,
+            "threatLevel": 1,
+            "violationType": "DISRESPECTFUL",
+            "language": "en",
+            "elongated": false,
+            "content": ".trade Croagunk @ Big Nugget\nAbility: Dry Skin\nAdamant Nature  \n- Fake Out\n- Mud-Slap\n- Poison Sting",
+            "action": "warn",
+            "multiApiUsed": false,
+            "isScam": false
+          }
+        ],
+        "riskScore": 2,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1750745019562,
+            "threatLevel": 1
+          },
+          {
+            "language": "en",
+            "timestamp": 1750745502894,
+            "threatLevel": 1
+          }
+        ],
+        "multiApiTranslations": 0,
+        "createdAt": 1750745019562,
+        "lastAnalysis": 1750745502894
+      }
+    ]
+  ],
+  "version": "9.0",
+  "lastUpdated": 1750751228071,
+  "multiApiEnabled": true,
+  "enhancedModeration": true
+}

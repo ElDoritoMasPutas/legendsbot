@@ -1,0 +1,9 @@
+{
+  "autoModerationEnabled": true,
+  "strictMode": true,
+  "adaptiveSensitivity": true,
+  "verboseLogging": true,
+  "logLevel": "normal",
+  "version": "1.0",
+  "lastUpdated": 1749879011436
+}

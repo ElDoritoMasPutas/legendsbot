@@ -1,0 +1,26 @@
+{
+  "servers": [
+    [
+      "1095036363348377623",
+      {
+        "logChannels": [
+          "1382504805443960852"
+        ],
+        "guildName": "Pokémon Legends",
+        "createdAt": 1749879225168,
+        "lastUpdated": 1750724653476,
+        "autoSetupCompleted": true,
+        "autoModeration": true,
+        "hourlyReports": true,
+        "language": "en",
+        "defaultTranslateTo": "en",
+        "autoTranslate": false,
+        "elongatedDetection": true,
+        "multiLanguage": true,
+        "multiApiEnabled": true
+      }
+    ]
+  ],
+  "lastUpdated": 1750724653477,
+  "version": "9.0"
+}

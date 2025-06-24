@@ -1,0 +1,1229 @@
+{
+  "profiles": [
+    [
+      "501512074434838539",
+      {
+        "messageCount": 0,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749909320197,
+        "threatHistory": [],
+        "behaviorScore": 5,
+        "predictionAccuracy": 0,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1749909320197,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          }
+        ],
+        "culturalProfile": {},
+        "crossLanguageRisk": 0
+      }
+    ],
+    [
+      "924938798050189333",
+      {
+        "messageCount": 0,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749909748433,
+        "threatHistory": [],
+        "behaviorScore": 5,
+        "predictionAccuracy": 0,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1749909748433,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          }
+        ],
+        "culturalProfile": {},
+        "crossLanguageRisk": 0
+      }
+    ],
+    [
+      "759415289099321365",
+      {
+        "messageCount": 0,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749910074792,
+        "threatHistory": [],
+        "behaviorScore": 5,
+        "predictionAccuracy": 0,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1749910074792,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          }
+        ],
+        "culturalProfile": {},
+        "crossLanguageRisk": 0
+      }
+    ],
+    [
+      "1221537836461723814",
+      {
+        "messageCount": 0,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749921185569,
+        "threatHistory": [],
+        "behaviorScore": 5,
+        "predictionAccuracy": 0,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1749911016459,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749911841554,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749912107118,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749912178383,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749912344688,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749912531788,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749912727486,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749912942465,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749916597352,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749916766864,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749919855378,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749920245376,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921185569,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          }
+        ],
+        "culturalProfile": {},
+        "crossLanguageRisk": 0
+      }
+    ],
+    [
+      "1314653492597756056",
+      {
+        "messageCount": 0,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749916418027,
+        "threatHistory": [
+          {
+            "timestamp": 1749913371841,
+            "threatLevel": 6,
+            "violationType": "RULE_VIOLATION",
+            "language": "es",
+            "translated": true
+          },
+          {
+            "timestamp": 1749916418027,
+            "threatLevel": 2,
+            "violationType": null,
+            "language": "en",
+            "translated": false
+          }
+        ],
+        "behaviorScore": 5,
+        "predictionAccuracy": 0,
+        "languageHistory": [
+          {
+            "language": "es",
+            "timestamp": 1749913371841,
+            "threatLevel": 6,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749913555539,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "es",
+            "timestamp": 1749913584964,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749916017059,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749916221522,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749916418027,
+            "threatLevel": 2,
+            "culturalSensitivity": 5
+          }
+        ],
+        "culturalProfile": {},
+        "crossLanguageRisk": 0,
+        "joinDate": 1749912403794,
+        "accountAge": 189,
+        "initialRiskScore": 0
+      }
+    ],
+    [
+      "445626417003364362",
+      {
+        "messageCount": 0,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749912530333,
+        "threatHistory": [],
+        "behaviorScore": 5,
+        "predictionAccuracy": 0,
+        "languageHistory": [],
+        "culturalProfile": {},
+        "crossLanguageRisk": 0,
+        "joinDate": 1749912530333,
+        "accountAge": 2587,
+        "initialRiskScore": 0
+      }
+    ],
+    [
+      "709920975625519155",
+      {
+        "messageCount": 0,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749913229069,
+        "threatHistory": [],
+        "behaviorScore": 5,
+        "predictionAccuracy": 0,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1749913229069,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          }
+        ],
+        "culturalProfile": {},
+        "crossLanguageRisk": 0
+      }
+    ],
+    [
+      "1380531964607463646",
+      {
+        "messageCount": 0,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749923636786,
+        "threatHistory": [],
+        "behaviorScore": 5,
+        "predictionAccuracy": 0,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1749915642922,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749915760620,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749915879029,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749916016951,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749916125218,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749916232213,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749916350144,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749916464854,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749916740594,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749916951943,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749917056402,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749917229253,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749917395720,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749917643653,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749920530660,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749920631318,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749920738011,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749920890289,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921059410,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921191207,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921309328,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921600494,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921846823,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921979581,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749922997385,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749923108876,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749923278097,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749923425913,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749923529179,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749923636786,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          }
+        ],
+        "culturalProfile": {},
+        "crossLanguageRisk": 0
+      }
+    ],
+    [
+      "829390163611484239",
+      {
+        "messageCount": 0,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749917512213,
+        "threatHistory": [],
+        "behaviorScore": 5,
+        "predictionAccuracy": 0,
+        "languageHistory": [],
+        "culturalProfile": {},
+        "crossLanguageRisk": 0,
+        "joinDate": 1749917512213,
+        "accountAge": 1528,
+        "initialRiskScore": 0
+      }
+    ],
+    [
+      "474584323178233908",
+      {
+        "messageCount": 0,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749926166719,
+        "threatHistory": [],
+        "behaviorScore": 5,
+        "predictionAccuracy": 0,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1749918083656,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749918158157,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749918224286,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749918238597,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749918288186,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749918360059,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749918444754,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749918517924,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749918593664,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749918669009,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749918733915,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749918807765,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749918868860,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749918938439,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749919023532,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749919097416,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749919172035,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749919261384,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749919323608,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749919390391,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749919467716,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749919483743,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749919488772,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749925493267,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749925639280,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749925764459,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749925892794,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749926022518,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749926166719,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          }
+        ],
+        "culturalProfile": {},
+        "crossLanguageRisk": 0
+      }
+    ],
+    [
+      "1187882103786962975",
+      {
+        "messageCount": 0,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749919855678,
+        "threatHistory": [],
+        "behaviorScore": 5,
+        "predictionAccuracy": 0,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1749919433078,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749919855678,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          }
+        ],
+        "culturalProfile": {},
+        "crossLanguageRisk": 0
+      }
+    ],
+    [
+      "646817373625516042",
+      {
+        "messageCount": 0,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749920079729,
+        "threatHistory": [],
+        "behaviorScore": 5,
+        "predictionAccuracy": 0,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1749919506712,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749919916698,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749920079729,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          }
+        ],
+        "culturalProfile": {},
+        "crossLanguageRisk": 0
+      }
+    ],
+    [
+      "840975326079352882",
+      {
+        "messageCount": 0,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749919568007,
+        "threatHistory": [],
+        "behaviorScore": 5,
+        "predictionAccuracy": 0,
+        "languageHistory": [],
+        "culturalProfile": {},
+        "crossLanguageRisk": 0,
+        "joinDate": 1749919568007,
+        "accountAge": 1497,
+        "initialRiskScore": 0
+      }
+    ],
+    [
+      "491943964149153802",
+      {
+        "messageCount": 0,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749924509877,
+        "threatHistory": [],
+        "behaviorScore": 5,
+        "predictionAccuracy": 0,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1749919570459,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749919584449,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749920138318,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749920184258,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921175645,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749924034001,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749924319396,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749924509877,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          }
+        ],
+        "culturalProfile": {},
+        "crossLanguageRisk": 0
+      }
+    ],
+    [
+      "1148973652822470738",
+      {
+        "messageCount": 0,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749921793308,
+        "threatHistory": [],
+        "behaviorScore": 5,
+        "predictionAccuracy": 0,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1749921005358,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921016303,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921026079,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921033778,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921046918,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921053191,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921160536,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921273748,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921287632,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921310653,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921343990,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921355101,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921368844,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921379632,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921424860,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921494957,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921499661,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921507517,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921675282,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921687863,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749921793308,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          }
+        ],
+        "culturalProfile": {},
+        "crossLanguageRisk": 0
+      }
+    ],
+    [
+      "1138877118651056259",
+      {
+        "messageCount": 0,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749923716025,
+        "threatHistory": [],
+        "behaviorScore": 5,
+        "predictionAccuracy": 0,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1749922484624,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749922499652,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749923206871,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749923393182,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749923716025,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          }
+        ],
+        "culturalProfile": {},
+        "crossLanguageRisk": 0
+      }
+    ],
+    [
+      "792968930783133707",
+      {
+        "messageCount": 0,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749922572533,
+        "threatHistory": [],
+        "behaviorScore": 5,
+        "predictionAccuracy": 0,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1749922572533,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          }
+        ],
+        "culturalProfile": {},
+        "crossLanguageRisk": 0
+      }
+    ],
+    [
+      "193109258068295681",
+      {
+        "messageCount": 0,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749924000400,
+        "threatHistory": [],
+        "behaviorScore": 5,
+        "predictionAccuracy": 0,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1749923837378,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749923874328,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749923935397,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749923960674,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749923967746,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749923984195,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749924000400,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          }
+        ],
+        "culturalProfile": {},
+        "crossLanguageRisk": 0
+      }
+    ],
+    [
+      "778651895375069184",
+      {
+        "messageCount": 0,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749924977508,
+        "threatHistory": [],
+        "behaviorScore": 5,
+        "predictionAccuracy": 0,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1749924667617,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749924730708,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749924789321,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749924851264,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749924913581,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          },
+          {
+            "language": "en",
+            "timestamp": 1749924977508,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          }
+        ],
+        "culturalProfile": {},
+        "crossLanguageRisk": 0
+      }
+    ],
+    [
+      "857127520967983114",
+      {
+        "messageCount": 0,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749926117137,
+        "threatHistory": [],
+        "behaviorScore": 5,
+        "predictionAccuracy": 0,
+        "languageHistory": [
+          {
+            "language": "en",
+            "timestamp": 1749926117137,
+            "threatLevel": 0,
+            "culturalSensitivity": 5
+          }
+        ],
+        "culturalProfile": {},
+        "crossLanguageRisk": 0
+      }
+    ],
+    [
+      "572556978581143552",
+      {
+        "messageCount": 0,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749926357737,
+        "threatHistory": [],
+        "behaviorScore": 5,
+        "predictionAccuracy": 0,
+        "languageHistory": [],
+        "culturalProfile": {},
+        "crossLanguageRisk": 0,
+        "joinDate": 1749926357737,
+        "accountAge": 2237,
+        "initialRiskScore": 0
+      }
+    ]
+  ],
+  "version": "8.2",
+  "lastUpdated": 1749926391112,
+  "totalProfiles": 21,
+  "languageSupport": 36,
+  "superintelligence": true
+}

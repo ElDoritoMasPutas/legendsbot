@@ -1,0 +1,180 @@
+{
+  "profiles": [
+    [
+      "1148973652822470738",
+      {
+        "messageCount": 2,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749879859355,
+        "threatHistory": [],
+        "behaviorScore": 4.800000000000001,
+        "predictionAccuracy": 0
+      }
+    ],
+    [
+      "577574939041726476",
+      {
+        "messageCount": 4,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749891268246,
+        "threatHistory": [],
+        "behaviorScore": 4.600000000000001,
+        "predictionAccuracy": 0
+      }
+    ],
+    [
+      "147388096344883200",
+      {
+        "messageCount": 1,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749891193168,
+        "threatHistory": [],
+        "behaviorScore": 4.9,
+        "predictionAccuracy": 0
+      }
+    ],
+    [
+      "1035491534939897896",
+      {
+        "messageCount": 3,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749895973379,
+        "threatHistory": [],
+        "behaviorScore": 4.700000000000001,
+        "predictionAccuracy": 0
+      }
+    ],
+    [
+      "939243608719114290",
+      {
+        "messageCount": 4,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749896728467,
+        "threatHistory": [],
+        "behaviorScore": 4.600000000000001,
+        "predictionAccuracy": 0
+      }
+    ],
+    [
+      "1378829852370796726",
+      {
+        "messageCount": 11,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749904185825,
+        "threatHistory": [],
+        "behaviorScore": 3.9000000000000035,
+        "predictionAccuracy": 0
+      }
+    ],
+    [
+      "1273133091296383018",
+      {
+        "messageCount": 3,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749898938608,
+        "threatHistory": [],
+        "behaviorScore": 4.700000000000001,
+        "predictionAccuracy": 0
+      }
+    ],
+    [
+      "1138877118651056259",
+      {
+        "messageCount": 4,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749901169885,
+        "threatHistory": [],
+        "behaviorScore": 4.600000000000001,
+        "predictionAccuracy": 0
+      }
+    ],
+    [
+      "1065478605544628224",
+      {
+        "messageCount": 1,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [
+          "Suspicious username pattern"
+        ],
+        "lastAnalysis": 1749899978580,
+        "threatHistory": [],
+        "behaviorScore": 4.9,
+        "predictionAccuracy": 0,
+        "joinDate": 1749899715534,
+        "accountAge": 877,
+        "initialRiskScore": 3
+      }
+    ],
+    [
+      "1098475104075264041",
+      {
+        "messageCount": 4,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749904880455,
+        "threatHistory": [],
+        "behaviorScore": 4.600000000000001,
+        "predictionAccuracy": 0
+      }
+    ],
+    [
+      "1041583079229227109",
+      {
+        "messageCount": 1,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749904675587,
+        "threatHistory": [],
+        "behaviorScore": 4.9,
+        "predictionAccuracy": 0
+      }
+    ],
+    [
+      "722694633586556949",
+      {
+        "messageCount": 2,
+        "messageFrequency": "normal",
+        "emotionalPattern": "stable",
+        "communicationStyle": "neutral",
+        "riskIndicators": [],
+        "lastAnalysis": 1749904807473,
+        "threatHistory": [],
+        "behaviorScore": 4.800000000000001,
+        "predictionAccuracy": 0
+      }
+    ]
+  ],
+  "version": "7.0",
+  "lastUpdated": 1749908846339,
+  "totalProfiles": 12
+}
