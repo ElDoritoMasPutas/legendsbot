@@ -245,8 +245,18 @@ class ServerConfigManager {
         const configData = this.serverConfigs.get(guildId);
         configData[setting] = value;
         configData.lastUpdated = Date.now();
+        
+        // Force save immediately for important settings
         this.saveConfigs();
+        
+        console.log(`⚙️ Updated ${setting} to ${value} for guild ${guildId}`);
         return true;
+    }
+
+    // Helper method to get auto-translate status
+    isAutoTranslateEnabled(guildId) {
+        const configData = this.serverConfigs.get(guildId);
+        return configData ? (configData.autoTranslate === true) : false;
     }
 }
 
