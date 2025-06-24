@@ -77,6 +77,8 @@ client.on('messageCreate', async (message) => {
                 synthiaAnalysis.threatLevel === 0) {
                 
                 try {
+                    console.log(`🌍 Auto-translating message from ${message.author.tag}: ${synthiaAnalysis.language.detected} → ${serverConfig.defaultTranslateTo || 'en'}`);
+                    
                     const autoTranslation = await synthiaTranslator.translateText(
                         message.content, 
                         serverConfig.defaultTranslateTo || 'en', 
@@ -114,7 +116,7 @@ client.on('messageCreate', async (message) => {
                             autoReply.delete().catch(() => {});
                         });
                         
-                        console.log(`🌍 Auto-translated message from ${message.author.tag}: ${synthiaAnalysis.language.originalLanguage} → ${autoTranslation.targetLanguage}`);
+                        console.log(`✅ Auto-translated message successfully`);
                         
                         await discordLogger.logTranslation(
                             message.guild,
@@ -127,9 +129,29 @@ client.on('messageCreate', async (message) => {
                             autoTranslation.processingTime,
                             true
                         );
+                    } else {
+                        console.log(`⚠️ Auto-translation skipped: ${autoTranslation.error || 'Same text result'}`);
                     }
                 } catch (autoTranslateError) {
                     console.error('❌ Auto-translation error:', autoTranslateError);
+                }
+            } else {
+                // Enhanced debug why auto-translation was skipped
+                if (synthiaAnalysis.language.detected !== 'en') {
+                    const reasons = [];
+                    if (!serverConfig) reasons.push('No server config found');
+                    if (serverConfig && !serverConfig.autoTranslate) reasons.push('Auto-translate disabled');
+                    if (synthiaAnalysis.language.detected === 'en') reasons.push('Already English');
+                    if (synthiaAnalysis.language.detected === (serverConfig?.defaultTranslateTo || 'en')) reasons.push('Already target language');
+                    if (synthiaAnalysis.threatLevel > 0) reasons.push(`Threat level ${synthiaAnalysis.threatLevel} > 0`);
+                    
+                    if (reasons.length > 0 && config.verboseLogging) {
+                        console.log(`🔇 Auto-translation skipped for ${message.author.tag}: ${reasons.join(', ')}`);
+                        console.log(`   Text: "${message.content.slice(0, 30)}..."`);
+                        console.log(`   Server: ${message.guild.name}`);
+                        console.log(`   Config exists: ${!!serverConfig}`);
+                        console.log(`   Auto-translate setting: ${serverConfig?.autoTranslate}`);
+                    }
                 }
             }
             
@@ -182,13 +204,15 @@ client.once('ready', async () => {
     console.log(`📡 Servers: ${client.guilds.cache.size}`);
     console.log(`👥 Users: ${client.users.cache.size}`);
     
-    // FIXED: Display updated thresholds
+    // FIXED: Display updated thresholds and Pokemon file support
     console.log(`\n🛡️ FIXED Moderation Thresholds:`);
     console.log(`   ⚠️ Warn: ${config.moderationThresholds.warn}+ (was 1+)`);
     console.log(`   🗑️ Delete: ${config.moderationThresholds.delete}+ (was 2+)`);
     console.log(`   🔇 Mute: ${config.moderationThresholds.mute}+ (was 4+)`);
     console.log(`   🔨 Ban: ${config.moderationThresholds.ban}+ (was 6+)`);
-    console.log(`   ✅ False Positive Prevention: ACTIVE\n`);
+    console.log(`   ✅ False Positive Prevention: ACTIVE`);
+    console.log(`   🎮 Pokemon File Support: ENABLED (.pk9, .pk8, .pb8, etc.)`);
+    console.log(`   🚫 Pokemon File Bans: FIXED\n`);
     
     client.user.setActivity(`${client.guilds.cache.size} servers | v${config.aiVersion} FIXED`, {
         type: ActivityType.Watching
@@ -224,12 +248,13 @@ client.on('guildCreate', async (guild) => {
             await discordLogger.sendLog(
                 guild,
                 'success',
-                '🚀 Enhanced Synthia v9.0 Activated! (FALSE POSITIVES FIXED)',
-                `Multi-API Intelligence System is now protecting this server with IMPROVED accuracy and reduced false positives.`,
+                '🚀 Enhanced Synthia v9.0 Activated! (POKEMON FILES FIXED)',
+                `Multi-API Intelligence System is now protecting this server with IMPROVED accuracy, reduced false positives, and full Pokemon file support.`,
                 [
-                    { name: '🔧 Features Active', value: '• FIXED Multi-language toxicity detection\n• 9 translation API providers\n• Auto-translation support\n• IMPROVED elongated word detection\n• Auto-moderation with HIGHER thresholds', inline: false },
+                    { name: '🔧 Features Active', value: '• FIXED Multi-language toxicity detection\n• 9 translation API providers\n• Auto-translation support\n• IMPROVED elongated word detection\n• Auto-moderation with HIGHER thresholds\n• 🎮 **POKEMON FILE SUPPORT (.pk9, .pk8, .pb8, etc.)**', inline: false },
+                    { name: '🎮 Pokemon Community Friendly', value: '• Pokemon files (.pk9, .pk8, .pb8, .pa8) are WHITELISTED\n• Pokemon trading terms are protected\n• Gaming context awareness enabled\n• NO MORE FALSE BANS for Pokemon files!', inline: false },
                     { name: '📊 Fixed Thresholds', value: `• Warn: ${config.moderationThresholds.warn}+ threat level\n• Delete: ${config.moderationThresholds.delete}+ threat level\n• Mute: ${config.moderationThresholds.mute}+ threat level\n• Ban: ${config.moderationThresholds.ban}+ threat level`, inline: false },
-                    { name: '📚 Getting Started', value: '• `!synthia help` - View all commands\n• `/translate` - Translate any text\n• `/test-detection` - Test detection with new thresholds\n• `/toggle-automod` - Toggle auto-moderation', inline: false }
+                    { name: '📚 Getting Started', value: '• `!synthia help` - View all commands\n• `/translate` - Translate any text\n• `/test-detection` - Test detection with new thresholds\n• `!synthia testpokemon` - **Test Pokemon file safety**\n• `/toggle-automod` - Toggle auto-moderation', inline: false }
                 ]
             );
         } else {
@@ -237,15 +262,16 @@ client.on('guildCreate', async (guild) => {
             if (owner) {
                 try {
                     const setupEmbed = new EmbedBuilder()
-                        .setTitle('🚀 Enhanced Synthia v9.0 Setup Required (FALSE POSITIVES FIXED!)')
-                        .setDescription(`Thank you for adding Enhanced Synthia to **${guild.name}**!\n\n**✅ MAJOR UPDATE: False positive issues have been resolved!**\n\nTo complete setup, please run this command in your desired log channel:`)
+                        .setTitle('🚀 Enhanced Synthia v9.0 Setup Required (POKEMON FILES FIXED!)')
+                        .setDescription(`Thank you for adding Enhanced Synthia to **${guild.name}**!\n\n**✅ MAJOR UPDATE: False positive issues AND Pokemon file bans have been resolved!**\n\nTo complete setup, please run this command in your desired log channel:`)
                         .addFields(
                             { name: '📡 Setup Command', value: '```!synthia loghere```', inline: false },
-                            { name: '🔧 What\'s Fixed', value: '• Higher threat thresholds prevent false warnings\n• Better scam detection (no more .trade false positives)\n• Improved context awareness for gaming terms\n• More conservative toxicity scoring', inline: false },
+                            { name: '🔧 What\'s Fixed', value: '• Higher threat thresholds prevent false warnings\n• Better scam detection (no more .trade false positives)\n• Improved context awareness for gaming terms\n• More conservative toxicity scoring\n• **🎮 POKEMON FILES (.pk9, .pk8, .pb8, etc.) ARE NOW SAFE!**', inline: false },
+                            { name: '🎮 Pokemon Support', value: '• All Pokemon file extensions whitelisted (.pk9, .pk8, .pb8, .pa8, etc.)\n• Pokemon trading terms protected\n• Gaming context awareness enabled\n• Test with: `!synthia testpokemon`', inline: false },
                             { name: '📊 New Thresholds', value: `• Warn: ${config.moderationThresholds.warn}+ (was 1+)\n• Delete: ${config.moderationThresholds.delete}+ (was 2+)\n• Mute: ${config.moderationThresholds.mute}+ (was 4+)\n• Ban: ${config.moderationThresholds.ban}+ (was 6+)`, inline: false }
                         )
                         .setColor(config.colors.success)
-                        .setFooter({ text: `Enhanced Synthia v${config.aiVersion} - FALSE POSITIVES FIXED` });
+                        .setFooter({ text: `Enhanced Synthia v${config.aiVersion} - POKEMON FILES FIXED` });
                     
                     await owner.send({ embeds: [setupEmbed] });
                 } catch (error) {
@@ -338,4 +364,6 @@ console.log('🤖 Auto-Translation Feature');
 console.log('⚡ Enhanced Cultural Context Analysis');
 console.log('🛡️ Toggleable Auto-Moderation System');
 console.log('✅ FALSE POSITIVE ISSUES RESOLVED');
+console.log('🎮 POKEMON FILE SUPPORT ENABLED');
+console.log('🚫 NO MORE .pk9/.pk8/.pb8 FALSE BANS');
 console.log('🚀 Starting enhanced login sequence...\n');
