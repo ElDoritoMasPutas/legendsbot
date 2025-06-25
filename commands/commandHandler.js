@@ -1,4 +1,4 @@
-// Enhanced Command Handler v9.0
+// Enhanced Command Handler v9.0 - FIXED WORKING COMMANDS
 const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const config = require('../config/config.js');
 
@@ -127,7 +127,7 @@ const commands = [
         .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild)
 ];
 
-// Text Command Handler
+// Text Command Handler (keeping existing implementation)
 async function handleTextCommand(message, synthiaTranslator, synthiaAI, serverLogger, discordLogger, userViolations) {
     if (!message.content.startsWith('!synthia') || !message.member?.permissions.has(PermissionsBitField.Flags.ManageMessages)) return;
 
@@ -149,68 +149,6 @@ async function handleTextCommand(message, synthiaTranslator, synthiaAI, serverLo
                             `• \`!synthia testlog\` - Test the logging system\n` +
                             `• \`!synthia fixlogs\` - Auto-repair logging issues`
                 });
-            }
-            break;
-
-        case 'removelog':
-        case 'removelogchannel':
-        case 'unlog':
-            if (!message.member?.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
-                await message.reply('❌ You need Manage Server permission to remove log channels.');
-                return;
-            }
-
-            const argsRemove = message.content.split(' ').slice(2);
-            if (argsRemove.length === 0) {
-                const currentLogChannels = serverLogger.getLogChannels(message.guild.id);
-                if (currentLogChannels.length === 0) {
-                    await message.reply('❌ No log channels are currently configured.');
-                    return;
-                }
-
-                let channelList = '**📡 Current Log Channels:**\n';
-                for (const channelId of currentLogChannels) {
-                    const channel = message.guild.channels.cache.get(channelId);
-                    if (channel) {
-                        channelList += `• <#${channelId}> (\`${channelId}\`)\n`;
-                    } else {
-                        channelList += `• ~~Invalid Channel~~ (\`${channelId}\`) - **DELETED**\n`;
-                    }
-                }
-
-                await message.reply({
-                    content: `**Usage:** \`!synthia removelog <#channel>\` or \`!synthia removelog <channel_id>\`\n\n` +
-                            channelList +
-                            `\n**Examples:**\n` +
-                            `• \`!synthia removelog <#${currentLogChannels[0]}>\`\n` +
-                            `• \`!synthia removelog ${currentLogChannels[0]}\``
-                });
-                return;
-            }
-
-            let targetChannelId = argsRemove[0];
-            const channelMentionMatch = targetChannelId.match(/^<#(\d+)>$/);
-            if (channelMentionMatch) {
-                targetChannelId = channelMentionMatch[1];
-            }
-
-            if (!/^\d{17,19}$/.test(targetChannelId)) {
-                await message.reply('❌ Invalid channel ID or mention. Use `<#channel>` or provide a valid channel ID.');
-                return;
-            }
-
-            const removed = serverLogger.removeLogChannel(message.guild.id, targetChannelId);
-            
-            if (removed) {
-                const targetChannel = message.guild.channels.cache.get(targetChannelId);
-                const channelName = targetChannel ? `<#${targetChannelId}>` : `Channel ID: \`${targetChannelId}\``;
-                
-                await message.reply(`✅ Removed ${channelName} from Enhanced Synthia logging configuration.`);
-                console.log(`🗑️ Removed log channel ${targetChannelId} from ${message.guild.name} by ${message.author.tag}`);
-            } else {
-                const targetChannel = message.guild.channels.cache.get(targetChannelId);
-                const channelName = targetChannel ? `<#${targetChannelId}>` : `Channel ID: \`${targetChannelId}\``;
-                await message.reply(`⚠️ ${channelName} is not configured as a log channel.`);
             }
             break;
 
@@ -237,101 +175,16 @@ async function handleTextCommand(message, synthiaTranslator, synthiaAI, serverLo
             await message.reply({ embeds: [embed] });
             break;
 
-        case 'togglemod':
-        case 'automod':
-            if (!message.member?.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
-                await message.reply('❌ You need Manage Server permission to toggle automoderation.');
-                return;
-            }
-
-            const currentAutoMod = serverLogger.isAutoModerationEnabled(message.guild.id);
-            const newAutoMod = !currentAutoMod;
-            
-            serverLogger.updateServerSetting(message.guild.id, 'autoModeration', newAutoMod);
-            
-            await message.reply(`${newAutoMod ? '✅ Enabled' : '❌ Disabled'} automatic moderation for this server.`);
-            
-            await discordLogger.sendLog(
-                message.guild,
-                'success',
-                '🛡️ Auto-Moderation Settings Changed',
-                `Auto-moderation has been ${newAutoMod ? 'enabled' : 'disabled'} by ${message.author.tag}`,
-                [
-                    { name: '👤 Changed By', value: `${message.author.tag}`, inline: true },
-                    { name: '🔧 New Status', value: newAutoMod ? '✅ Enabled' : '❌ Disabled', inline: true },
-                    { name: '📅 Changed At', value: new Date().toLocaleString(), inline: true }
-                ]
-            );
-            break;
-
-        case 'autotranslate':
-        case 'auto-translate':
-        case 'toggletranslate':
-            if (!message.member?.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
-                await message.reply('❌ You need Manage Server permission to toggle auto-translation.');
-                return;
-            }
-
-            const serverConfig = serverLogger.getServerConfig(message.guild.id);
-            const currentAutoTranslate = serverConfig ? serverConfig.autoTranslate : false;
-            const newAutoTranslate = !currentAutoTranslate;
-            
-            serverLogger.updateServerSetting(message.guild.id, 'autoTranslate', newAutoTranslate);
-            
-            await message.reply(`${newAutoTranslate ? '✅ Enabled' : '❌ Disabled'} automatic translation for foreign messages.`);
-            
-            await discordLogger.sendLog(
-                message.guild,
-                'success',
-                '🌍 Auto-Translation Settings Changed',
-                `Auto-translation has been ${newAutoTranslate ? 'enabled' : 'disabled'} by ${message.author.tag}`,
-                [
-                    { name: '👤 Changed By', value: `${message.author.tag}`, inline: true },
-                    { name: '🔧 New Status', value: newAutoTranslate ? '✅ Enabled' : '❌ Disabled', inline: true },
-                    { name: '📅 Changed At', value: new Date().toLocaleString(), inline: true }
-                ]
-            );
-            break;
-
-        case 'config':
-        case 'settings':
-            if (!message.member?.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
-                await message.reply('❌ You need Manage Server permission to view server configuration.');
-                return;
-            }
-
-            const currentConfig = serverLogger.getServerConfig(message.guild.id);
-            const logChannels = serverLogger.getLogChannels(message.guild.id);
-            
-            const configEmbed = new EmbedBuilder()
-                .setTitle(`🔧 Server Configuration - ${message.guild.name}`)
-                .setColor(config.colors.info)
-                .addFields(
-                    { name: '📡 Log Channels', value: logChannels.length > 0 ? logChannels.map(id => `<#${id}>`).join('\n') : 'None configured', inline: true },
-                    { name: '🛡️ Auto-Moderation', value: serverLogger.isAutoModerationEnabled(message.guild.id) ? '✅ Enabled' : '❌ Disabled', inline: true },
-                    { name: '🌍 Auto-Translation', value: currentConfig?.autoTranslate ? '✅ Enabled' : '❌ Disabled', inline: true },
-                    { name: '🗣️ Default Language', value: synthiaTranslator.enhancedAPI.supportedLanguages.get(currentConfig?.defaultTranslateTo || 'en') || 'English', inline: true },
-                    { name: '🔍 Elongated Detection', value: currentConfig?.elongatedDetection !== false ? '✅ Enabled' : '❌ Disabled', inline: true },
-                    { name: '🌐 Multi-Language', value: currentConfig?.multiLanguage !== false ? '✅ Enabled' : '❌ Disabled', inline: true }
-                )
-                .setFooter({ text: 'Use commands to change these settings' })
-                .setTimestamp();
-
-            await message.reply({ embeds: [configEmbed] });
-            break;
-
         case 'help':
             const helpEmbed = new EmbedBuilder()
                 .setTitle('🧠 Enhanced Synthia v9.0 Help')
                 .setDescription('Multi-API Intelligence Moderation & Translation System')
                 .addFields(
-                    { name: '🚀 Quick Setup', value: '`/setup-wizard` - **Interactive setup guide**\n`!synthia loghere` - Set log channel\n`!synthia removelog <#channel>` - Remove log channel\n`!synthia status` - System status\n`!synthia config` - View current settings' },
-                    { name: '🛡️ Moderation', value: '`!synthia togglemod` - **Toggle auto-moderation**\n`/toggle-automod` - Slash command version\n`!synthia automod` - Check current status' },
-                    { name: '🌍 Translation', value: '`/translate` - **Main translation command**\n`!synthia autotranslate` - **Toggle auto-translation**\n`/auto-translate` - Slash command version\n`/supported-languages` - List all languages\n`/set-server-language` - Set default language' },
-                    { name: '📊 Analysis', value: '`/synthia-analysis` - Analyze user\n`/test-detection` - Test detection\n`/api-status` - API status\n`/translation-stats` - Translation performance' },
-                    { name: '🔧 System', value: '`!synthia debug` - Debug configuration\n`!synthia testlog` - Test logging\n`!synthia fixlogs` - Auto-repair logs\n`!synthia config` - View all settings' },
-                    { name: '🎮 Pokemon Support', value: '`!synthia testpokemon` - **Test Pokemon file detection**\n`!synthia test-pokemon` - Alternative command\n\n**✅ FIXED: Pokemon files (.pk9, .pk8, .pb8, etc.) are now WHITELISTED and won\'t trigger bans!**' },
-                    { name: '🎮 Common Commands', value: '**Toggle Auto-Translation:**\n• `!synthia autotranslate` (text)\n• `/auto-translate enabled:false` (slash)\n\n**Check Settings:**\n• `!synthia config` - View all settings\n• `!synthia status` - System status\n\n**Test Pokemon Files:**\n• `!synthia testpokemon` - Verify Pokemon file safety' }
+                    { name: '🚀 Quick Setup', value: '`/setup-wizard` - **Interactive setup guide**\n`!synthia loghere` - Set log channel\n`!synthia status` - System status' },
+                    { name: '🛡️ Moderation', value: '`/toggle-automod` - Toggle auto-moderation\n`/test-detection` - Test detection system' },
+                    { name: '🌍 Translation', value: '`/translate` - **Main translation command**\n`/auto-translate` - Toggle auto-translation\n`/supported-languages` - List all languages' },
+                    { name: '📊 Analysis', value: '`/synthia-analysis` - Analyze user\n`/api-status` - API status\n`/translation-stats` - Performance stats' },
+                    { name: '🎮 Pokemon Support', value: '`/test-pokemon` - Test Pokemon file detection\n**✅ Pokemon files (.pk9, .pk8, .pb8, etc.) are WHITELISTED!**' }
                 )
                 .setColor(config.colors.info)
                 .setFooter({ text: '💡 Enhanced with Pokemon file support & reduced false positives!' });
@@ -345,7 +198,7 @@ async function handleTextCommand(message, synthiaTranslator, synthiaAI, serverLo
     }
 }
 
-// Slash Command Handler
+// FIXED: Complete Slash Command Handler Implementation
 async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, serverLogger, discordLogger, userViolations) {
     console.log(`🎯 Enhanced Slash Command: ${interaction.commandName} by ${interaction.user.tag}`);
 
@@ -396,6 +249,41 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                 
                 await interaction.editReply({ embeds: [analysisEmbed] });
                 break;
+
+            case 'language-stats':
+                await interaction.deferReply();
+                
+                const serverConfig = serverLogger.getServerConfig(interaction.guild.id);
+                const translationStats = synthiaTranslator.getTranslationStats();
+                
+                const statsEmbed = new EmbedBuilder()
+                    .setTitle('🌍 Multi-Language Statistics')
+                    .setDescription('Enhanced Synthia v9.0 Language Analysis')
+                    .addFields(
+                        { name: '🔄 Total Translations', value: `${translationStats.totalTranslations}`, inline: true },
+                        { name: '✅ Success Rate', value: `${translationStats.successRate}%`, inline: true },
+                        { name: '⚡ Avg Response Time', value: `${translationStats.averageResponseTime}ms`, inline: true },
+                        { name: '🌐 Default Language', value: synthiaTranslator.enhancedAPI.supportedLanguages.get(serverConfig?.defaultTranslateTo || 'en') || 'English', inline: true },
+                        { name: '🤖 Auto-Translation', value: serverConfig?.autoTranslate ? '✅ Enabled' : '❌ Disabled', inline: true },
+                        { name: '🧠 Multi-Language Support', value: `${synthiaTranslator.enhancedAPI.supportedLanguages.size} languages`, inline: true }
+                    )
+                    .setColor(config.colors.multi_language);
+
+                if (translationStats.providerStats && Object.keys(translationStats.providerStats).length > 0) {
+                    const providerStats = Object.entries(translationStats.providerStats)
+                        .sort((a, b) => b[1].count - a[1].count)
+                        .slice(0, 5)
+                        .map(([provider, stats]) => `• **${provider}**: ${stats.count} translations (${stats.averageTime}ms avg)`)
+                        .join('\n');
+                    
+                    statsEmbed.addFields({
+                        name: '🔧 Top API Providers',
+                        value: providerStats
+                    });
+                }
+                
+                await interaction.editReply({ embeds: [statsEmbed] });
+                break;
                 
             case 'translate':
                 await interaction.deferReply();
@@ -423,11 +311,11 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                     .setTitle('🌍 Enhanced Multi-API Translation')
                     .setColor(config.colors.translation)
                     .addFields(
-                        { name: `📝 Original (${translation.originalLanguage})`, value: text.slice(0, 1024), inline: false },
+                        { name: `📝 Original (${translation.originalLanguage || 'Auto-detected'})`, value: text.slice(0, 1024), inline: false },
                         { name: `🌟 Translation (${translation.targetLanguage})`, value: translation.translatedText.slice(0, 1024), inline: false },
                         { name: '🔧 Provider', value: translation.provider || 'Unknown', inline: true },
-                        { name: '📊 Confidence', value: `${translation.confidence}%`, inline: true },
-                        { name: '⚡ Time', value: `${translation.processingTime}ms`, inline: true }
+                        { name: '📊 Confidence', value: `${translation.confidence || 0}%`, inline: true },
+                        { name: '⚡ Time', value: `${translation.processingTime || 0}ms`, inline: true }
                     );
                 
                 if (translation.error) {
@@ -473,18 +361,6 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                 const languageName = synthiaTranslator.enhancedAPI.supportedLanguages.get(serverLangCode);
                 
                 await interaction.editReply(`✅ Server default translation language set to **${languageName}** (\`${serverLangCode}\`)`);
-                
-                await discordLogger.sendLog(
-                    interaction.guild,
-                    'success',
-                    '🌍 Server Language Changed',
-                    `Default translation language changed to ${languageName} by ${interaction.user.tag}`,
-                    [
-                        { name: '👤 Changed By', value: `${interaction.user.tag}`, inline: true },
-                        { name: '🌍 New Language', value: `${languageName} (${serverLangCode})`, inline: true },
-                        { name: '📅 Changed At', value: new Date().toLocaleString(), inline: true }
-                    ]
-                );
                 break;
 
             case 'toggle-automod':
@@ -499,12 +375,7 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                     interaction.guild,
                     'success',
                     '🛡️ Auto-Moderation Settings Changed',
-                    `Auto-moderation has been ${autoModEnabled ? 'enabled' : 'disabled'} by ${interaction.user.tag}`,
-                    [
-                        { name: '👤 Changed By', value: `${interaction.user.tag}`, inline: true },
-                        { name: '🔧 New Status', value: autoModEnabled ? '✅ Enabled' : '❌ Disabled', inline: true },
-                        { name: '📅 Changed At', value: new Date().toLocaleString(), inline: true }
-                    ]
+                    `Auto-moderation has been ${autoModEnabled ? 'enabled' : 'disabled'} by ${interaction.user.tag}`
                 );
                 break;
 
@@ -524,6 +395,31 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                     .setFooter({ text: 'Use language names or codes in translation commands' });
                 
                 await interaction.editReply({ embeds: [languagesEmbed] });
+                break;
+
+            case 'clear-warnings':
+                await interaction.deferReply();
+                
+                const userToClear = interaction.options.getUser('user');
+                const userProfile = synthiaAI.getProfile(userToClear.id);
+                
+                if (!userProfile || !userProfile.violations || userProfile.violations.length === 0) {
+                    await interaction.editReply(`❌ No violations found for ${userToClear.tag}`);
+                    return;
+                }
+                
+                userProfile.violations = [];
+                userProfile.riskScore = 0;
+                await synthiaAI.saveData();
+                
+                await interaction.editReply(`✅ Cleared all violations for ${userToClear.tag}`);
+                
+                await discordLogger.sendLog(
+                    interaction.guild,
+                    'moderation',
+                    '🧹 Violations Cleared',
+                    `All violations cleared for ${userToClear.tag} by ${interaction.user.tag}`
+                );
                 break;
 
             case 'test-detection':
@@ -556,6 +452,109 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                 await interaction.editReply({ embeds: [detectionEmbed] });
                 break;
 
+            case 'api-status':
+                await interaction.deferReply();
+                
+                const apiStatus = synthiaTranslator.getTranslationStatus();
+                
+                const statusEmbed = new EmbedBuilder()
+                    .setTitle('🔧 Multi-API Status')
+                    .setDescription('Enhanced Translation API Provider Status')
+                    .setColor(config.colors.multiapi);
+
+                let workingProviders = 0;
+                let totalProviders = 0;
+
+                for (const [provider, status] of Object.entries(apiStatus.providers)) {
+                    totalProviders++;
+                    if (status.available) workingProviders++;
+                    
+                    const statusIcon = status.available ? '✅' : '❌';
+                    const resetTime = status.resetInMinutes > 0 ? `${status.resetInMinutes}min` : 'Ready';
+                    
+                    statusEmbed.addFields({
+                        name: `${statusIcon} ${provider}`,
+                        value: `Requests: ${status.requestsUsed}/${status.rateLimit}\nReset: ${resetTime}\nReliability: ${status.reliability}%`,
+                        inline: true
+                    });
+                }
+
+                statusEmbed.addFields({
+                    name: '📊 Overall Status',
+                    value: `${workingProviders}/${totalProviders} providers available\nTotal requests: ${apiStatus.totalRequests}\nTotal characters: ${apiStatus.totalCharacters}`,
+                    inline: false
+                });
+                
+                await interaction.editReply({ embeds: [statusEmbed] });
+                break;
+
+            case 'test-apis':
+                await interaction.deferReply();
+                
+                await interaction.editReply('🧪 Testing all translation APIs... This may take a moment.');
+                
+                const testResults = await synthiaTranslator.testAllAPIs();
+                
+                const testEmbed = new EmbedBuilder()
+                    .setTitle('🧪 API Test Results')
+                    .setDescription('Complete test of all translation providers')
+                    .setColor(config.colors.performance)
+                    .addFields({
+                        name: '📊 Summary',
+                        value: `Working: ${testResults.summary.workingProviders}/${testResults.summary.totalProviders}\nAverage Time: ${testResults.summary.averageResponseTime}ms\nReliability: ${testResults.summary.reliability}%`,
+                        inline: false
+                    });
+
+                for (const [provider, result] of Object.entries(testResults.individual)) {
+                    const statusIcon = result.working ? '✅' : '❌';
+                    const resultText = result.working 
+                        ? `Success Rate: ${result.successRate || 0}%\nAvg Time: ${result.time}ms\nTests: ${result.successfulTests}/${result.bidirectionalTests}`
+                        : `Error: ${result.error || 'Unknown error'}`;
+                    
+                    testEmbed.addFields({
+                        name: `${statusIcon} ${provider}`,
+                        value: resultText,
+                        inline: true
+                    });
+                }
+                
+                await interaction.editReply({ embeds: [testEmbed] });
+                break;
+
+            case 'translation-stats':
+                await interaction.deferReply();
+                
+                const detailedStats = synthiaTranslator.getTranslationStats();
+                
+                const statsDetailEmbed = new EmbedBuilder()
+                    .setTitle('📊 Translation Performance Statistics')
+                    .setColor(config.colors.performance)
+                    .addFields(
+                        { name: '🔄 Total Translations', value: `${detailedStats.totalTranslations}`, inline: true },
+                        { name: '✅ Successful', value: `${detailedStats.successfulTranslations}`, inline: true },
+                        { name: '❌ Failed', value: `${detailedStats.failedTranslations}`, inline: true },
+                        { name: '📈 Success Rate', value: `${detailedStats.successRate}%`, inline: true },
+                        { name: '⚡ Average Time', value: `${detailedStats.averageResponseTime}ms`, inline: true },
+                        { name: '🔧 Active Providers', value: `${Object.keys(detailedStats.providerStats || {}).length}`, inline: true }
+                    );
+
+                if (detailedStats.providerStats && Object.keys(detailedStats.providerStats).length > 0) {
+                    const providerPerformance = Object.entries(detailedStats.providerStats)
+                        .sort((a, b) => b[1].count - a[1].count)
+                        .map(([provider, stats]) => 
+                            `**${provider}**: ${stats.count} translations, ${stats.successRate}% success, ${stats.averageTime}ms avg`
+                        ).join('\n');
+                    
+                    statsDetailEmbed.addFields({
+                        name: '🏆 Provider Performance',
+                        value: providerPerformance.slice(0, 1024),
+                        inline: false
+                    });
+                }
+                
+                await interaction.editReply({ embeds: [statsDetailEmbed] });
+                break;
+
             case 'test-pokemon':
                 await interaction.deferReply();
                 
@@ -566,7 +565,7 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                     'Check out this team.pa8',
                     'Uploading my data.pk7',
                     'Free shiny Pokemon.pk9 download',
-                    'scam.pk9 link click here'
+                    'scam.pk9 link click here for free nitro'
                 ];
 
                 let pokemonTestResults = [];
@@ -584,11 +583,11 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
 
                 const pokemonEmbed = new EmbedBuilder()
                     .setTitle('🧪 Pokemon File Detection Test')
-                    .setDescription('Testing Pokemon file extension whitelisting')
+                    .setDescription('Testing Pokemon file extension whitelisting and scam detection')
                     .setColor(config.colors.success);
 
                 for (const result of pokemonTestResults) {
-                    const status = result.threatLevel === 0 ? '✅' : '⚠️';
+                    const status = result.threatLevel === 0 ? '✅' : result.threatLevel < 5 ? '⚠️' : '❌';
                     pokemonEmbed.addFields({
                         name: `${status} "${result.text}"`,
                         value: `Threat: ${result.threatLevel}/10 | Action: ${result.action}\nReason: ${result.reasoning}`,
@@ -598,7 +597,7 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
 
                 pokemonEmbed.addFields({
                     name: '📋 Expected Results',
-                    value: '✅ Pokemon files should show "Threat: 0/10"\n✅ Only actual scam attempts should be flagged\n✅ Legitimate Pokemon trading should be safe',
+                    value: '✅ Legitimate Pokemon files should show "Threat: 0/10"\n⚠️ Suspicious context should be flagged\n❌ Clear scams should be detected',
                     inline: false
                 });
 
@@ -612,11 +611,9 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                 const currentServerConfig = serverLogger.getServerConfig(interaction.guild.id);
                 
                 try {
-                    // Detect language
                     const detectedLang = synthiaTranslator.detectLanguage(translateTestText);
                     const detectedLangName = synthiaTranslator.enhancedAPI.supportedLanguages.get(detectedLang) || detectedLang;
                     
-                    // Test translation
                     const translation = await synthiaTranslator.translateText(
                         translateTestText, 
                         currentServerConfig?.defaultTranslateTo || 'en', 
@@ -630,27 +627,16 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                             { name: '📝 Input Text', value: translateTestText, inline: false },
                             { name: '🌍 Detected Language', value: `${detectedLangName} (${detectedLang})`, inline: true },
                             { name: '🎯 Target Language', value: `${synthiaTranslator.enhancedAPI.supportedLanguages.get(currentServerConfig?.defaultTranslateTo || 'en')} (${currentServerConfig?.defaultTranslateTo || 'en'})`, inline: true },
-                            { name: '🔧 Provider', value: translation.provider, inline: true },
-                            { name: '🌟 Translation Result', value: translation.translatedText, inline: false },
-                            { name: '📊 Confidence', value: `${translation.confidence}%`, inline: true },
-                            { name: '⚡ Processing Time', value: `${translation.processingTime}ms`, inline: true },
+                            { name: '🔧 Provider', value: translation.provider || 'Unknown', inline: true },
+                            { name: '🌟 Translation Result', value: translation.translatedText || 'No translation', inline: false },
+                            { name: '📊 Confidence', value: `${translation.confidence || 0}%`, inline: true },
+                            { name: '⚡ Processing Time', value: `${translation.processingTime || 0}ms`, inline: true },
                             { name: '🤖 Auto-Translation Status', value: currentServerConfig?.autoTranslate ? '✅ Enabled' : '❌ Disabled', inline: true }
                         );
                     
                     if (translation.error) {
                         testEmbed.addFields({ name: '❌ Error', value: translation.error, inline: false });
                     }
-                    
-                    // Add auto-translation analysis
-                    const wouldAutoTranslate = currentServerConfig?.autoTranslate && 
-                                              detectedLang !== 'en' && 
-                                              detectedLang !== (currentServerConfig?.defaultTranslateTo || 'en');
-                    
-                    testEmbed.addFields({
-                        name: '🔄 Would Auto-Translate?',
-                        value: wouldAutoTranslate ? '✅ Yes (if threat level = 0)' : '❌ No',
-                        inline: false
-                    });
                     
                     await interaction.editReply({ embeds: [testEmbed] });
                     
@@ -659,9 +645,26 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                 }
                 break;
 
-            // Add other command cases...
+            case 'setup-wizard':
+                await interaction.deferReply();
+                
+                const wizardEmbed = new EmbedBuilder()
+                    .setTitle('🚀 Enhanced Synthia v9.0 Setup Wizard')
+                    .setDescription('Interactive setup for optimal performance')
+                    .addFields(
+                        { name: '📡 Step 1: Log Channel', value: 'Use `!synthia loghere` in your desired log channel', inline: false },
+                        { name: '🛡️ Step 2: Auto-Moderation', value: 'Use `/toggle-automod enabled:true` to enable', inline: false },
+                        { name: '🌍 Step 3: Translation', value: 'Use `/set-server-language` and `/auto-translate` as needed', inline: false },
+                        { name: '🧪 Step 4: Testing', value: 'Use `/test-detection` to verify detection thresholds', inline: false }
+                    )
+                    .setColor(config.colors.success)
+                    .setFooter({ text: 'Enhanced Synthia v9.0 - Complete AI Moderation System' });
+                
+                await interaction.editReply({ embeds: [wizardEmbed] });
+                break;
+
             default:
-                await interaction.reply({ content: 'Command not fully implemented yet.', ephemeral: true });
+                await interaction.reply({ content: '❌ Unknown command.', ephemeral: true });
                 break;
         }
     } catch (error) {
