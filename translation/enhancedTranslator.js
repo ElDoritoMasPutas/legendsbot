@@ -1,4 +1,4 @@
-// Enhanced Synthia Translator with Multi-API Support v9.0
+// Enhanced Synthia Translator with Multi-API Support v9.0 - FIXED TOXICITY DETECTION
 const EnhancedTranslationAPI = require('../data/Translation.js');
 const config = require('../config/config.js');
 
@@ -18,32 +18,30 @@ class SynthiaMultiTranslator {
         
         this.initializeLanguagePatterns();
         this.initializeScamPatterns();
-        console.log('🚀 Synthia Multi-Translator v9.0 initialized with FIXED toxicity detection');
+        console.log('🚀 Synthia Multi-Translator v9.0 initialized with WORKING toxicity detection');
         console.log(`🔧 Total providers: ${Object.keys(this.enhancedAPI.apis).length}`);
         console.log(`🌍 Languages supported: ${this.enhancedAPI.supportedLanguages.size}`);
     }
 
     initializeScamPatterns() {
-        // FIXED: More specific scam patterns to avoid false positives
+        // FIXED: Better scam patterns with context
         this.scamPatterns = new Set([
-            'free nitro click here', 'discord gift code', 'limited time nitro',
+            'free nitro click', 'discord gift code', 'free discord nitro',
             'steam gift card free', 'free games click', 'nitro giveaway click', 
-            'crypto scam', 'bitcoin investment', 'easy money guaranteed', 
+            'crypto scam', 'bitcoin investment guaranteed', 'easy money guaranteed', 
             'get rich quick', 'work from home guaranteed', 'make money online click',
-            'passive income guaranteed', 'trading bot scam', 'forex scam',
-            'binary options scam', 'cryptocurrency scam', 'nft free click',
-            'airdrop click here', 'whitelist click', 'presale scam', 
-            'double your money', 'guaranteed profit click', 'risk free investment',
-            'no experience needed money', 'automatic money', 'join now click',
-            'act fast limited', 'exclusive offer click', 'secret method money',
-            'dm me for money', 'add me for free', 'nitro boost free',
-            'free robux click', 'roblox gift free', 'minecraft gift click',
-            'steam key free', 'game key giveaway', 'cs:go skins free',
-            'twitter followers buy', 'instagram followers free', 'tiktok views buy'
+            'passive income guaranteed', 'trading bot guaranteed', 'forex guaranteed profit',
+            'binary options guaranteed', 'cryptocurrency investment guaranteed', 'nft free click',
+            'airdrop click here', 'whitelist click now', 'presale guaranteed', 
+            'double your money guaranteed', 'guaranteed profit click', 'risk free investment guaranteed',
+            'no experience needed money', 'automatic money making', 'join now get rich',
+            'act fast limited time money', 'exclusive offer click money', 'secret method money',
+            'dm me for money', 'add me for free money', 'nitro boost free click',
+            'free robux click here', 'roblox gift free click', 'minecraft gift click here',
+            'steam key free click', 'game key giveaway click', 'cs:go skins free click'
         ]);
         
-        // REMOVED: Removed simple ".trade" pattern that was causing false positives
-        console.log('🛡️ FIXED: Scam patterns initialized with reduced false positives');
+        console.log('🛡️ FIXED: Enhanced scam patterns initialized');
     }
 
     initializeLanguagePatterns() {
@@ -59,37 +57,54 @@ class SynthiaMultiTranslator {
         this.initializeArabicPatterns();
         this.initializeHindiPatterns();
         
-        console.log(`🧠 FIXED: Initialized toxicity patterns for ${this.toxicityDatabase.size} languages with reduced sensitivity`);
+        console.log(`🧠 FIXED: Initialized working toxicity patterns for ${this.toxicityDatabase.size} languages`);
     }
 
     initializeEnglishPatterns() {
-        // FIXED: More specific toxic words with higher severity requirements
-        const severeToxicWords = ['fuck you', 'fucking idiot', 'kill yourself', 'kys', 'die bitch', 
-                                 'you should die', 'hang yourself', 'nigger', 'faggot'];
+        // FIXED: Proper severity weighting for English
+        const severeToxicWords = [
+            'kill yourself', 'kys', 'hang yourself', 'die bitch', 'you should die', 
+            'end your life', 'commit suicide', 'go die', 'nigger', 'faggot', 'retard'
+        ];
         
-        const moderateToxicWords = ['fuck', 'shit', 'bitch', 'damn', 'hell', 'dick', 'pussy', 'cock', 
-                                   'bastard', 'piss', 'slut', 'whore', 'gay insult', 'retard'];
+        const moderateToxicWords = [
+            'fuck you', 'fucking idiot', 'piece of shit', 'go to hell', 'bitch ass',
+            'motherfucker', 'asshole', 'dickhead', 'cunt', 'whore', 'slut'
+        ];
         
-        const mildWords = ['idiot', 'stupid', 'moron', 'dumb', 'pathetic', 'worthless', 'loser'];
+        const mildToxicWords = [
+            'fuck', 'shit', 'damn', 'hell', 'bitch', 'ass', 'dick', 'pussy', 
+            'bastard', 'piss', 'crap', 'dumbass'
+        ];
+        
+        const insultWords = [
+            'idiot', 'stupid', 'moron', 'dumb', 'pathetic', 'worthless', 'loser',
+            'trash', 'garbage', 'scum', 'waste'
+        ];
         
         const patterns = [];
         
-        // FIXED: Assign different weights to different severity levels
+        // FIXED: Proper weight assignments
         for (const word of severeToxicWords) {
-            patterns.push({ pattern: new RegExp(`\\b${this.escapeRegex(word)}\\b`, 'gi'), weight: 4 });
+            patterns.push({ pattern: new RegExp(`\\b${this.escapeRegex(word)}\\b`, 'gi'), weight: 5 });
         }
         
         for (const word of moderateToxicWords) {
+            patterns.push({ pattern: new RegExp(`\\b${this.escapeRegex(word)}\\b`, 'gi'), weight: 3 });
+        }
+        
+        for (const word of mildToxicWords) {
             patterns.push({ pattern: new RegExp(`\\b${this.escapeRegex(word)}\\b`, 'gi'), weight: 2 });
         }
         
-        for (const word of mildWords) {
+        for (const word of insultWords) {
             patterns.push({ pattern: new RegExp(`\\b${this.escapeRegex(word)}\\b`, 'gi'), weight: 1 });
         }
         
-        // FIXED: More specific threat patterns
-        patterns.push({ pattern: /\b(kill\s*yourself|k\s*y\s*s|hang\s*yourself|end\s*your\s*life)\b/gi, weight: 5 });
-        patterns.push({ pattern: /\b(you\s*should\s*die|go\s*kill|hope\s*you\s*die)\b/gi, weight: 4 });
+        // FIXED: Threat patterns with high weights
+        patterns.push({ pattern: /\b(kill\s*yourself|k\s*y\s*s|hang\s*yourself|end\s*your\s*life)\b/gi, weight: 6 });
+        patterns.push({ pattern: /\b(you\s*should\s*die|go\s*kill|hope\s*you\s*die)\b/gi, weight: 5 });
+        patterns.push({ pattern: /\b(i\s*will\s*kill|gonna\s*kill|going\s*to\s*kill)\b/gi, weight: 4 });
         
         this.toxicityDatabase.set('en', {
             patterns: patterns,
@@ -98,94 +113,87 @@ class SynthiaMultiTranslator {
         });
     }
 
-    // FIXED: Similar pattern improvements for other languages (abbreviated for space)
     initializeSpanishPatterns() {
-        const severeToxicWords = ['hijo de puta', 'vete a la mierda', 'que te jodan'];
-        const moderateToxicWords = ['idiota', 'estúpido', 'imbécil', 'pendejo', 'cabrón', 'puta', 'mierda'];
-        const mildWords = ['tonto', 'bobo'];
-        
-        const patterns = [];
-        
-        for (const word of severeToxicWords) {
-            patterns.push({ pattern: new RegExp(`\\b${this.escapeRegex(word)}\\b`, 'gi'), weight: 4 });
-        }
-        
-        for (const word of moderateToxicWords) {
-            patterns.push({ pattern: new RegExp(`\\b${this.escapeRegex(word)}\\b`, 'gi'), weight: 2 });
-        }
-        
-        for (const word of mildWords) {
-            patterns.push({ pattern: new RegExp(`\\b${this.escapeRegex(word)}\\b`, 'gi'), weight: 1 });
-        }
+        const patterns = [
+            { pattern: /\b(matate|suicidate|vete a morir)\b/gi, weight: 6 },
+            { pattern: /\b(hijo de puta|vete a la mierda|que te jodan|jodete)\b/gi, weight: 4 },
+            { pattern: /\b(idiota|estúpido|imbécil|pendejo|cabrón|puta|mierda|joder)\b/gi, weight: 2 },
+            { pattern: /\b(tonto|bobo)\b/gi, weight: 1 }
+        ];
         
         this.toxicityDatabase.set('es', {
             patterns: patterns,
-            commonWords: ['el', 'la', 'de', 'que', 'y', 'a', 'en', 'un', 'ser', 'se', 'no', 'haber', 'por', 'con', 'su', 'para', 'como', 'estar', 'tener', 'le', 'lo'],
+            commonWords: ['el', 'la', 'de', 'que', 'y', 'a', 'en', 'un', 'ser', 'se'],
             culturalSensitivity: 'high'
         });
     }
 
-    // Abbreviated other language initializations for space...
     initializeFrenchPatterns() {
         const patterns = [
-            { pattern: /\b(putain de merde|va te faire foutre)\b/gi, weight: 4 },
-            { pattern: /\b(merde|putain|con|connard|salope)\b/gi, weight: 2 },
+            { pattern: /\b(tue\s*toi|suicide\s*toi|va\s*mourir)\b/gi, weight: 6 },
+            { pattern: /\b(putain de merde|va te faire foutre|fils de pute)\b/gi, weight: 4 },
+            { pattern: /\b(merde|putain|con|connard|salope|enculé)\b/gi, weight: 2 },
             { pattern: /\b(idiot|stupide|crétin)\b/gi, weight: 1 }
         ];
         
         this.toxicityDatabase.set('fr', {
             patterns: patterns,
-            commonWords: ['le', 'de', 'un', 'être', 'et', 'à', 'il', 'avoir', 'ne', 'je'],
+            commonWords: ['le', 'de', 'un', 'être', 'et', 'à', 'il', 'avoir'],
             culturalSensitivity: 'medium'
         });
     }
 
+    // FIXED: Better German patterns with more comprehensive detection
     initializeGermanPatterns() {
         const patterns = [
-            { pattern: /\b(fick dich|hurensohn|arschloch)\b/gi, weight: 4 },
-            { pattern: /\b(scheiße|fick|arsch|fotze)\b/gi, weight: 2 },
-            { pattern: /\b(idiot|dumm|vollpfosten)\b/gi, weight: 1 }
+            { pattern: /\b(bring\s*dich\s*um|töte\s*dich|stirb)\b/gi, weight: 6 },
+            { pattern: /\b(fick\s*dich|hurensohn|arschloch|verfickt|schlampe)\b/gi, weight: 4 },
+            { pattern: /\b(scheiße|scheisse|fick|arsch|fotze|verdammt|kacke)\b/gi, weight: 2 },
+            { pattern: /\b(idiot|dumm|vollpfosten|trottel)\b/gi, weight: 1 }
         ];
         
         this.toxicityDatabase.set('de', {
             patterns: patterns,
-            commonWords: ['der', 'die', 'und', 'in', 'den', 'von', 'zu', 'das'],
+            commonWords: ['der', 'die', 'und', 'in', 'den', 'von', 'zu', 'das', 'ich', 'du', 'er', 'sie'],
             culturalSensitivity: 'high'
         });
     }
 
     initializeRussianPatterns() {
         const patterns = [
-            { pattern: /\b(сука блядь|пошел нахуй)\b/gi, weight: 4 },
-            { pattern: /\b(сука|блядь|хуй|пизда|ебать)\b/gi, weight: 2 },
+            { pattern: /\b(убей себя|повесься|сдохни)\b/gi, weight: 6 },
+            { pattern: /\b(сука блядь|пошел нахуй|ебать тебя)\b/gi, weight: 4 },
+            { pattern: /\b(сука|блядь|хуй|пизда|ебать|говно)\b/gi, weight: 2 },
             { pattern: /\b(дурак|идиот|дебил)\b/gi, weight: 1 }
         ];
         
         this.toxicityDatabase.set('ru', {
             patterns: patterns,
-            commonWords: ['и', 'в', 'не', 'на', 'я', 'быть', 'он', 'с', 'что', 'а'],
+            commonWords: ['и', 'в', 'не', 'на', 'я', 'быть', 'он', 'с'],
             culturalSensitivity: 'high'
         });
     }
 
     initializePortuguesePatterns() {
         const patterns = [
-            { pattern: /\b(filho da puta|vai se foder)\b/gi, weight: 4 },
-            { pattern: /\b(merda|porra|caralho|foda|puta)\b/gi, weight: 2 },
+            { pattern: /\b(se\s*mata|vai\s*morrer|suicida)\b/gi, weight: 6 },
+            { pattern: /\b(filho da puta|vai se foder|puta que pariu)\b/gi, weight: 4 },
+            { pattern: /\b(merda|porra|caralho|foda|puta|cu)\b/gi, weight: 2 },
             { pattern: /\b(idiota|estúpido|otário)\b/gi, weight: 1 }
         ];
         
         this.toxicityDatabase.set('pt', {
             patterns: patterns,
-            commonWords: ['o', 'de', 'e', 'a', 'que', 'em', 'ser', 'um', 'para'],
+            commonWords: ['o', 'de', 'e', 'a', 'que', 'em', 'ser', 'um'],
             culturalSensitivity: 'medium'
         });
     }
 
     initializeItalianPatterns() {
         const patterns = [
-            { pattern: /\b(vaffanculo|figlio di puttana)\b/gi, weight: 4 },
-            { pattern: /\b(merda|cazzo|stronzo|puttana)\b/gi, weight: 2 },
+            { pattern: /\b(ucciditi|ammazzati|crepa)\b/gi, weight: 6 },
+            { pattern: /\b(vaffanculo|figlio di puttana|merda di merda)\b/gi, weight: 4 },
+            { pattern: /\b(merda|cazzo|stronzo|puttana|figa)\b/gi, weight: 2 },
             { pattern: /\b(idiota|stupido|coglione)\b/gi, weight: 1 }
         ];
         
@@ -198,9 +206,9 @@ class SynthiaMultiTranslator {
 
     initializeJapanesePatterns() {
         const patterns = [
-            { pattern: /死ね|しね/gi, weight: 4 },
-            { pattern: /バカ|馬鹿|ばか|アホ|クソ|くそ/gi, weight: 2 },
-            { pattern: /ブス|デブ/gi, weight: 1 }
+            { pattern: /死ね|殺す|自殺しろ/gi, weight: 6 },
+            { pattern: /バカ|馬鹿|ばか|アホ|クソ|くそ|ちくしょう/gi, weight: 2 },
+            { pattern: /ブス|デブ|きもい/gi, weight: 1 }
         ];
         
         this.toxicityDatabase.set('ja', {
@@ -212,9 +220,9 @@ class SynthiaMultiTranslator {
 
     initializeChinesePatterns() {
         const patterns = [
-            { pattern: /他妈的|去死/gi, weight: 4 },
-            { pattern: /傻逼|操|妈的|混蛋|王八蛋/gi, weight: 2 },
-            { pattern: /白痴|蠢货/gi, weight: 1 }
+            { pattern: /去死|他妈的|杀死你/gi, weight: 6 },
+            { pattern: /傻逼|操|妈的|混蛋|王八蛋|狗屎/gi, weight: 2 },
+            { pattern: /白痴|蠢货|笨蛋/gi, weight: 1 }
         ];
         
         this.toxicityDatabase.set('zh', {
@@ -226,8 +234,9 @@ class SynthiaMultiTranslator {
 
     initializeArabicPatterns() {
         const patterns = [
-            { pattern: /كلب ابن كلب/gi, weight: 4 },
-            { pattern: /كلب|حمار|غبي|احمق/gi, weight: 2 },
+            { pattern: /اقتل نفسك|موت|اذهب للجحيم/gi, weight: 6 },
+            { pattern: /كلب ابن كلب|لعنة عليك/gi, weight: 4 },
+            { pattern: /كلب|حمار|غبي|احمق|قذر/gi, weight: 2 },
             { pattern: /مجنون/gi, weight: 1 }
         ];
         
@@ -240,9 +249,10 @@ class SynthiaMultiTranslator {
 
     initializeHindiPatterns() {
         const patterns = [
-            { pattern: /मादरचोद|भोसड़ी के/gi, weight: 4 },
-            { pattern: /चुतिया|गांडू|रंडी|हरामी/gi, weight: 2 },
-            { pattern: /बेवकूफ|गधा/gi, weight: 1 }
+            { pattern: /मर जा|खुद को मार डाल|जहन्नुम में जा/gi, weight: 6 },
+            { pattern: /मादरचोद|भोसड़ी के|रंडी|हरामी/gi, weight: 4 },
+            { pattern: /चुतिया|गांडू|साला|कमीना/gi, weight: 2 },
+            { pattern: /बेवकूफ|गधा|मूर्ख/gi, weight: 1 }
         ];
         
         this.toxicityDatabase.set('hi', {
@@ -260,9 +270,8 @@ class SynthiaMultiTranslator {
         return this.enhancedAPI.detectLanguage(text);
     }
 
-    // FIXED: Less aggressive elongated text normalization
     normalizeElongatedText(text) {
-        // Only normalize if there are 4+ repeated characters (was 2+)
+        // Only normalize if there are 4+ repeated characters
         let normalized = text.replace(/(.)\1{3,}/gi, '$1$1');
         normalized = normalized.replace(/\b([a-zA-Z])\s+(?=[a-zA-Z]\b)/g, '$1');
         normalized = normalized.replace(/([a-zA-Z])[._\-]{2,}(?=[a-zA-Z])/g, '$1');
@@ -376,10 +385,10 @@ class SynthiaMultiTranslator {
         }));
     }
 
-    // FIXED: Much more conservative toxicity analysis
+    // FIXED: Proper toxicity analysis that actually works
     async analyzeToxicityInLanguage(text, langCode) {
         const langData = this.toxicityDatabase.get(langCode) || this.toxicityDatabase.get('en');
-        if (!langData) return { toxicityLevel: 0, matches: [], elongatedWords: [] };
+        if (!langData) return { toxicityLevel: 0, matches: [], elongatedWords: [], language: 'Unknown' };
         
         let toxicityLevel = 0;
         const matches = [];
@@ -388,18 +397,21 @@ class SynthiaMultiTranslator {
         const normalizedText = this.normalizeElongatedText(text);
         const isElongated = normalizedText !== text;
         
-        const textsToCheck = [text, normalizedText];
+        const textsToCheck = [text.toLowerCase(), normalizedText.toLowerCase()];
         
-        // FIXED: Use weighted scoring system
+        // FIXED: Proper weighted scoring
         for (const textToCheck of textsToCheck) {
             for (const patternObj of langData.patterns || []) {
                 const foundMatches = textToCheck.match(patternObj.pattern);
                 if (foundMatches) {
                     const weight = patternObj.weight || 1;
-                    toxicityLevel += foundMatches.length * weight; // Use weighted scoring
+                    const matchScore = foundMatches.length * weight;
+                    toxicityLevel += matchScore;
                     matches.push(...foundMatches);
                     
-                    if (textToCheck === normalizedText && isElongated) {
+                    console.log(`🔍 Toxicity match: "${foundMatches.join(', ')}" (weight: ${weight}, score: +${matchScore})`);
+                    
+                    if (textToCheck === normalizedText.toLowerCase() && isElongated) {
                         for (const match of foundMatches) {
                             elongatedWords.push({
                                 original: text.match(new RegExp(match.split('').join('[.\\s_\\-]*'), 'gi'))?.[0] || match,
@@ -412,74 +424,59 @@ class SynthiaMultiTranslator {
             }
         }
         
-        // FIXED: Much more conservative scam detection
+        // FIXED: Enhanced scam detection with context
         const lowerText = text.toLowerCase();
         let scamScore = 0;
         for (const scamPattern of this.scamPatterns) {
             if (lowerText.includes(scamPattern)) {
-                scamScore += 3; // Reduced from 6
+                scamScore += 4;
                 matches.push(`[SCAM: ${scamPattern}]`);
-                console.log(`🚨 SCAM PATTERN DETECTED: "${scamPattern}" in "${text}"`);
+                console.log(`🚨 SCAM PATTERN: "${scamPattern}" found in "${text}"`);
             }
         }
         
-        // FIXED: Only add scam score if multiple patterns or very specific patterns
-        if (scamScore >= 6 || matches.filter(m => m.includes('[SCAM:')).length >= 2) {
-            toxicityLevel += scamScore;
-        }
-        
-        // FIXED: More conservative URL pattern checking
-        const suspiciousUrlPatterns = [
-            /bit\.ly\/[^\s]+free/gi,
-            /tinyurl\.com\/[^\s]+nitro/gi,
-            /discord\.gg\/[^\s]+\s+(free|nitro|gift)/gi
-        ];
-        
-        for (const pattern of suspiciousUrlPatterns) {
-            if (pattern.test(text)) {
-                toxicityLevel += 2; // Reduced from 4
-                matches.push('[SUSPICIOUS_URL]');
+        // Special handling for .trade
+        if (lowerText.includes('.trade')) {
+            const suspiciousContext = ['free', 'click', 'guaranteed', 'nitro', 'gift', 'scam', 'money'];
+            const hasSuspiciousContext = suspiciousContext.some(word => lowerText.includes(word));
+            
+            if (hasSuspiciousContext) {
+                scamScore += 5;
+                matches.push('[SUSPICIOUS_TRADE]');
+                console.log(`🚨 SUSPICIOUS .trade context detected`);
             }
         }
         
-        // FIXED: Reduced penalty for multiple matches
-        if (matches.length > 3) toxicityLevel += 1; // Reduced from 2
-        if (isElongated && matches.length > 0) toxicityLevel += 1; // Only add if there are actual matches
+        toxicityLevel += scamScore;
         
-        // FIXED: More conservative threat detection
+        // FIXED: Threat patterns
         const severeThreats = [
-            /kill\s*yourself\s*now/gi,
-            /you\s*should\s*die\s*today/gi,
-            /go\s*hang\s*yourself/gi
+            /kill\s*yourself/gi,
+            /you\s*should\s*die/gi,
+            /go\s*hang\s*yourself/gi,
+            /end\s*your\s*life/gi
         ];
         
         for (const pattern of severeThreats) {
             if (pattern.test(text)) {
-                toxicityLevel += 3; // Reduced from 5
+                toxicityLevel += 4;
                 matches.push('[SEVERE_THREAT]');
+                console.log(`🚨 SEVERE THREAT detected: ${pattern}`);
             }
         }
         
+        // Apply cultural sensitivity multiplier
         const sensitivity = langData.culturalSensitivity;
         if (sensitivity === 'very high') {
-            toxicityLevel *= 1.2; // Reduced from 1.5
+            toxicityLevel *= 1.3;
         } else if (sensitivity === 'high') {
-            toxicityLevel *= 1.1; // Reduced from 1.2
+            toxicityLevel *= 1.2;
         }
         
-        // FIXED: Cap at 10 and require minimum threshold
+        // Cap at 10
         const finalLevel = Math.min(10, Math.round(toxicityLevel));
         
-        // FIXED: Don't report very low levels as toxic
-        if (finalLevel <= 2 && matches.length <= 1) {
-            return {
-                toxicityLevel: 0,
-                matches: [],
-                elongatedWords: [],
-                language: this.enhancedAPI.supportedLanguages.get(langCode) || 'Unknown',
-                culturalSensitivity: sensitivity || 'medium'
-            };
-        }
+        console.log(`🧠 Toxicity Analysis Result: Level ${finalLevel}/10 for "${text}" (${matches.length} matches)`);
         
         return {
             toxicityLevel: finalLevel,
