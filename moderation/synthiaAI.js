@@ -1,4 +1,4 @@
-// Enhanced Synthia AI Brain v9.0 - FIXED False Positive Issues
+// Enhanced Synthia AI Brain v9.0 - FIXED Working Moderation - NO DUPLICATE VARIABLES
 const fs = require('fs').promises;
 const config = require('../config/config.js');
 
@@ -40,7 +40,7 @@ class EnhancedSynthiaAI {
         }
     }
 
-    // FIXED: Much more conservative analysis with better thresholds
+    // FIXED: Proper analysis that actually detects violations - NO DUPLICATE VARIABLES
     async analyzeMessage(content, author, channel, message) {
         const startTime = Date.now();
         
@@ -65,33 +65,43 @@ class EnhancedSynthiaAI {
         };
 
         try {
-            // FIXED: Skip analysis for very short messages, common phrases, or Pokemon files
-            if (content.length < 3) {
+            // Skip analysis for very short messages
+            if (content.length < 2) {
                 analysis.processingTime = Date.now() - startTime;
                 return analysis;
             }
 
-            // FIXED: Skip analysis for common gaming/trading terms AND Pokemon files
-            const commonGameTerms = [
-                'trade', 'trading', 'looking for', 'lf', 'offering', 'ft', 'for trade',
-                'pokemon', 'shiny', 'legendary', 'giveaway', 'contest', 'battle',
-                'gg', 'good game', 'wp', 'well played', 'gl', 'good luck',
-                // Pokemon file extensions
-                '.pk9', '.pk8', '.pk7', '.pk6', '.pk5', '.pk4', '.pk3',
-                '.pb8', '.pb7', '.pa8', '.pa7', '.pkm', '.3gpkm'
-            ];
-            
-            const lowerContent = content.toLowerCase();
-            const isCommonGameTerm = commonGameTerms.some(term => lowerContent.includes(term));
-            
-            // FIXED: More specific Pokemon file detection
-            const pokemonFilePattern = /\.(pk[3-9]|pb[78]|pa[78]|pkm|3gpkm|ck3|bk4|rk4|sk2|xk3)\b/i;
+            // FIXED: Single lowerContent declaration used throughout
+            const lowerContent = content.toLowerCase().trim();
+
+            // FIXED: Only skip very basic gaming terms
+            const basicGameTerms = ['gg', 'wp', 'gl hf', 'good game', 'well played'];
+            if (basicGameTerms.includes(lowerContent) && content.length < 15) {
+                analysis.processingTime = Date.now() - startTime;
+                return analysis;
+            }
+
+            // FIXED: Comprehensive Pokemon content detection (check early)
+            const pokemonFilePattern = /\.(pk[3-9]|pb[78]|pa[78]|pkm|3gpkm|ck3|bk4|rk4|sk2|xk3)(\s|$)/i;
             const isPokemonFile = pokemonFilePattern.test(content);
             
-            if ((isCommonGameTerm && content.length < 50) || isPokemonFile) {
-                console.log(`⚪ Skipping analysis for Pokemon content: "${content}"`);
+            // FIXED: Pokemon trading format detection (showdown sets, etc.)
+            const pokemonTerms = [
+                'shiny:', 'level:', 'ball:', 'ability:', 'nature:', 'evs:', 'ivs:', 'moves:', 'item:',
+                'tera type:', 'hidden power:', 'happiness:', 'ot:', 'tid:', 'gigantamax:',
+                'dusk ball', 'poke ball', 'ultra ball', 'master ball', 'beast ball', 'apricorn',
+                'adamant', 'modest', 'jolly', 'timid', 'bold', 'impish', 'careful', 'calm',
+                'hasty', 'naive', 'serious', 'hardy', 'lonely', 'brave', 'relaxed', 'quiet',
+                'hp:', 'attack:', 'defense:', 'sp. atk:', 'sp. def:', 'speed:'
+            ];
+            
+            const pokemonTermCount = pokemonTerms.filter(term => lowerContent.includes(term)).length;
+            const isPokemonTrading = pokemonTermCount >= 2 || (lowerContent.includes('.trade') && pokemonTermCount >= 1);
+            
+            if (isPokemonFile || isPokemonTrading) {
+                console.log(`🎮 Pokemon content detected - skipping analysis: "${content.slice(0, 50)}..." (${isPokemonFile ? 'file' : 'trading format'})`);
                 analysis.processingTime = Date.now() - startTime;
-                analysis.reasoning.push('Pokemon file or gaming content detected - skipped analysis');
+                analysis.reasoning.push(isPokemonFile ? 'Pokemon file detected - whitelisted' : 'Pokemon trading format detected - whitelisted');
                 return analysis;
             }
 
@@ -109,142 +119,135 @@ class EnhancedSynthiaAI {
                 analysis.language.processingTime = translation.processingTime;
                 analysis.multiApiUsed = true;
                 
-                // Log translation
-                await this.discordLogger.logTranslation(
-                    message.guild,
-                    content,
-                    translation.translatedText,
-                    analysis.language.originalLanguage,
-                    translation.targetLanguage || 'English',
-                    author,
-                    translation.provider,
-                    translation.processingTime
-                );
+                // Use translated text for analysis if translation was successful
+                if (!translation.error && translation.translatedText !== content) {
+                    console.log(`🌍 Analyzing translated text: "${translation.translatedText}"`);
+                }
             }
             
-            // FIXED: Enhanced toxicity analysis with better logic
-            const toxicityAnalysis = await this.synthiaTranslator.analyzeToxicityInLanguage(content, detectedLang);
+            // FIXED: Proper toxicity analysis using detected language
+            let toxicityAnalysis;
+            
+            if (detectedLang !== 'en' && analysis.language.translated) {
+                // For non-English: analyze original text in original language
+                toxicityAnalysis = await this.synthiaTranslator.analyzeToxicityInLanguage(content, detectedLang);
+                
+                // If no toxicity found in original, also check translated text
+                if (toxicityAnalysis.toxicityLevel === 0) {
+                    const englishAnalysis = await this.synthiaTranslator.analyzeToxicityInLanguage(analysis.language.translated, 'en');
+                    if (englishAnalysis.toxicityLevel > toxicityAnalysis.toxicityLevel) {
+                        toxicityAnalysis = englishAnalysis;
+                    }
+                }
+            } else {
+                // For English or when no translation: analyze in detected language
+                toxicityAnalysis = await this.synthiaTranslator.analyzeToxicityInLanguage(content, detectedLang);
+            }
+            
             analysis.threatLevel = toxicityAnalysis.toxicityLevel;
             analysis.toxicityScore = toxicityAnalysis.toxicityLevel;
             analysis.elongatedWords = toxicityAnalysis.elongatedWords || [];
             
-            // Cultural context analysis
-            analysis.culturalContext = this.synthiaTranslator.analyzeCulturalContext(content, detectedLang);
+            // FIXED: More specific scam detection (removed .trade since it's handled by Pokemon detection above)
+            let isScam = false;
+            const scamIndicators = [
+                'free nitro', 'discord gift', 'free robux', 'click here free',
+                'dm me for', 'guaranteed money', 'crypto scam', 'easy money'
+            ];
             
-            // FIXED: Only proceed if there's actual toxicity detected
-            if (toxicityAnalysis.toxicityLevel > 0) {
-                analysis.reasoning.push(`Toxicity detected in ${toxicityAnalysis.language}: Level ${toxicityAnalysis.toxicityLevel}/10`);
-                
-                if (toxicityAnalysis.matches.length > 0) {
-                    analysis.reasoning.push(`Toxic patterns: ${toxicityAnalysis.matches.slice(0, 3).join(', ')}`);
-                }
-                
-                if (toxicityAnalysis.elongatedWords.length > 0) {
-                    analysis.reasoning.push(`Elongated words detected: ${toxicityAnalysis.elongatedWords.map(w => w.original).join(', ')}`);
-                    // FIXED: Only minor penalty for elongated words
-                    analysis.threatLevel += 0.5;
-                }
-                
-                // FIXED: More specific scam detection
-                let isScam = false;
-                const scamIndicators = [
-                    'free nitro click',
-                    'discord gift click',
-                    'dm me for free',
-                    'guaranteed money',
-                    'investment scam',
-                    'crypto scam'
-                ];
-                
-                for (const indicator of scamIndicators) {
-                    if (lowerContent.includes(indicator)) {
-                        analysis.threatLevel += 3; // Increased penalty for clear scam indicators
-                        analysis.reasoning.push(`Scam indicator detected: ${indicator}`);
-                        isScam = true;
-                        break;
-                    }
-                }
-                
-                // FIXED: Get user profile for context
-                const profile = this.getBehavioralProfile(author.id);
-                profile.messageCount++;
-                
-                // FIXED: Much more conservative decision logic
-                if (isScam || analysis.threatLevel >= config.moderationThresholds.ban) {
-                    analysis.violationType = isScam ? 'SCAM' : 'SEVERE_TOXICITY';
-                    analysis.action = 'ban';
-                } else if (analysis.threatLevel >= config.moderationThresholds.mute && profile.riskScore >= 3) {
-                    analysis.violationType = 'HARASSMENT';
-                    analysis.action = 'mute';
-                } else if (analysis.threatLevel >= config.moderationThresholds.delete) {
-                    analysis.violationType = 'TOXIC_BEHAVIOR';
-                    analysis.action = 'delete';
-                } else if (analysis.threatLevel >= config.moderationThresholds.warn && profile.riskScore >= 2) {
-                    analysis.violationType = 'DISRESPECTFUL';
-                    analysis.action = 'warn';
-                }
-                
-                // FIXED: Only update profile if action is taken
-                if (analysis.action !== 'none') {
-                    if (!profile.violations) profile.violations = [];
-                    profile.violations.push({
-                        timestamp: Date.now(),
-                        threatLevel: analysis.threatLevel,
-                        violationType: analysis.violationType,
-                        language: detectedLang,
-                        elongated: analysis.elongatedWords.length > 0,
-                        content: content.slice(0, 100),
-                        action: analysis.action,
-                        multiApiUsed: analysis.multiApiUsed,
-                        provider: analysis.language.provider,
-                        isScam: isScam
-                    });
-                    
-                    // FIXED: More conservative risk score updates
-                    const riskIncrease = Math.ceil(analysis.threatLevel / 4); // Reduced risk accumulation
-                    profile.riskScore = Math.min(10, (profile.riskScore || 0) + riskIncrease);
-                    
-                    if (!profile.languageHistory) profile.languageHistory = [];
-                    profile.languageHistory.push({
-                        language: detectedLang,
-                        timestamp: Date.now(),
-                        threatLevel: analysis.threatLevel
-                    });
-                    
-                    if (analysis.multiApiUsed) {
-                        profile.multiApiTranslations = (profile.multiApiTranslations || 0) + 1;
-                    }
-
-                    // FIXED: Enhanced logging with better details
-                    console.log(`🚨 THREAT DETECTED - User: ${author.tag}`);
-                    console.log(`   Content: "${content}"`);
-                    console.log(`   Threat Level: ${analysis.threatLevel}/10`);
-                    console.log(`   Thresholds: Warn(${config.moderationThresholds.warn}) Delete(${config.moderationThresholds.delete}) Mute(${config.moderationThresholds.mute}) Ban(${config.moderationThresholds.ban})`);
-                    console.log(`   Violation Type: ${analysis.violationType}`);
-                    console.log(`   Action: ${analysis.action}`);
-                    console.log(`   User Risk Score: ${profile.riskScore}/10`);
-                    console.log(`   Reasoning: ${analysis.reasoning.join(', ')}`);
-                    console.log(`   Is Scam: ${isScam}`);
-                } else {
-                    // FIXED: Log when threat is detected but no action taken
-                    console.log(`⚪ Low-level threat detected but no action taken - User: ${author.tag}`);
-                    console.log(`   Content: "${content}"`);
-                    console.log(`   Threat Level: ${analysis.threatLevel}/10 (below thresholds)`);
-                    console.log(`   Required for action: Warn(${config.moderationThresholds.warn}+) with Risk(2+)`);
-                }
-            } else {
-                // FIXED: Minimal logging for clean messages
-                if (analysis.multiApiUsed && config.verboseLogging) {
-                    console.log(`🌍 Clean message translated: ${detectedLang} → en | "${content.slice(0, 30)}..."`);
+            for (const indicator of scamIndicators) {
+                if (lowerContent.includes(indicator)) {
+                    analysis.threatLevel += 6;
+                    analysis.reasoning.push(`Scam indicator: ${indicator}`);
+                    isScam = true;
+                    break;
                 }
             }
             
-            // FIXED: More realistic confidence calculation
-            analysis.confidence = Math.min(100, 60 + (analysis.threatLevel * 4) + (analysis.reasoning.length * 5));
+            // FIXED: Toxicity detection
+            if (toxicityAnalysis.toxicityLevel > 0) {
+                analysis.reasoning.push(`Toxicity detected: Level ${toxicityAnalysis.toxicityLevel}/10`);
+                
+                if (toxicityAnalysis.matches && toxicityAnalysis.matches.length > 0) {
+                    analysis.reasoning.push(`Toxic patterns: ${toxicityAnalysis.matches.slice(0, 3).join(', ')}`);
+                }
+            }
+            
+            // FIXED: Get user profile for context
+            const profile = this.getBehavioralProfile(author.id);
+            profile.messageCount++;
+            
+            // FIXED: Proper decision logic with working thresholds
+            if (isScam && analysis.threatLevel >= 6) {
+                analysis.violationType = 'SCAM';
+                analysis.action = 'ban';
+            } else if (analysis.threatLevel >= config.moderationThresholds.ban) {
+                analysis.violationType = 'SEVERE_TOXICITY';
+                analysis.action = 'ban';
+            } else if (analysis.threatLevel >= config.moderationThresholds.mute) {
+                analysis.violationType = 'HARASSMENT';
+                analysis.action = 'mute';
+            } else if (analysis.threatLevel >= config.moderationThresholds.delete) {
+                analysis.violationType = 'TOXIC_BEHAVIOR';
+                analysis.action = 'delete';
+            } else if (analysis.threatLevel >= config.moderationThresholds.warn) {
+                analysis.violationType = 'DISRESPECTFUL';
+                analysis.action = 'warn';
+            }
+            
+            // FIXED: Update profile when violations detected
+            if (analysis.violationType) {
+                if (!profile.violations) profile.violations = [];
+                profile.violations.push({
+                    timestamp: Date.now(),
+                    threatLevel: analysis.threatLevel,
+                    violationType: analysis.violationType,
+                    language: detectedLang,
+                    elongated: analysis.elongatedWords.length > 0,
+                    content: content.slice(0, 100),
+                    action: analysis.action,
+                    multiApiUsed: analysis.multiApiUsed,
+                    provider: analysis.language.provider,
+                    isScam: isScam
+                });
+                
+                // Risk score calculation
+                const riskIncrease = Math.ceil(analysis.threatLevel / 3);
+                profile.riskScore = Math.min(10, (profile.riskScore || 0) + riskIncrease);
+                
+                if (!profile.languageHistory) profile.languageHistory = [];
+                profile.languageHistory.push({
+                    language: detectedLang,
+                    timestamp: Date.now(),
+                    threatLevel: analysis.threatLevel
+                });
+                
+                if (analysis.multiApiUsed) {
+                    profile.multiApiTranslations = (profile.multiApiTranslations || 0) + 1;
+                }
+
+                // FIXED: Proper logging for violations
+                console.log(`🚨 VIOLATION DETECTED - User: ${author.tag}`);
+                console.log(`   Content: "${content}"`);
+                console.log(`   Threat Level: ${analysis.threatLevel}/10`);
+                console.log(`   Required Thresholds: Warn(${config.moderationThresholds.warn}) Delete(${config.moderationThresholds.delete}) Mute(${config.moderationThresholds.mute}) Ban(${config.moderationThresholds.ban})`);
+                console.log(`   Violation Type: ${analysis.violationType}`);
+                console.log(`   Action: ${analysis.action}`);
+                console.log(`   User Risk Score: ${profile.riskScore}/10`);
+                console.log(`   Reasoning: ${analysis.reasoning.join(', ')}`);
+                console.log(`   Is Scam: ${isScam}`);
+            } else if (analysis.threatLevel > 0) {
+                console.log(`⚪ Low threat detected but no action - User: ${author.tag}`);
+                console.log(`   Content: "${content}"`);
+                console.log(`   Threat Level: ${analysis.threatLevel}/10 (below warn threshold ${config.moderationThresholds.warn})`);
+            }
+            
+            // FIXED: Realistic confidence calculation
+            analysis.confidence = Math.min(100, 50 + (analysis.threatLevel * 5) + (analysis.reasoning.length * 10));
             analysis.processingTime = Date.now() - startTime;
             
             // Save data periodically
-            if (Math.random() < 0.05) { // Reduced frequency
+            if (Math.random() < 0.1) {
                 await this.saveData();
             }
             
