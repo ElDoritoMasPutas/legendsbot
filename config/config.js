@@ -1,10 +1,10 @@
-// Enhanced Discord Bot Configuration v9.0
+// Enhanced Discord Bot Configuration v9.0 - FIXED BALANCED THRESHOLDS
 require('dotenv').config();
 
 const config = {
     token: process.env.DISCORD_TOKEN,
     autoModerationEnabled: true,
-    strictMode: false, // FIXED: Reduced strictness to prevent false positives
+    strictMode: false,
     learningMode: true,
     adaptiveSensitivity: true,
     communityName: 'Synthia AI Community',
@@ -28,12 +28,12 @@ const config = {
     multiApiEnabled: true,
     fallbackEnabled: true,
     
-    // FIXED: Adjusted thresholds to prevent false positives
+    // FIXED: Balanced thresholds that actually work
     moderationThresholds: {
-        warn: 3,      // Increased from 1
-        delete: 4,    // Increased from 2
-        mute: 6,      // Increased from 4
-        ban: 8        // Increased from 6
+        warn: 2,      // Lowered to catch mild violations
+        delete: 3,    // Reasonable for inappropriate content
+        mute: 5,      // For repeated offenses
+        ban: 7        // For severe violations
     },
     
     colors: {
