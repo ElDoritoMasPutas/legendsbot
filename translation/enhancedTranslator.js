@@ -1,5 +1,4 @@
-// Enhanced Synthia Translator with Multi-API Support v9.0 - FIXED VERSION
-// Replace your entire translation/enhancedTranslator.js with this
+// Enhanced Synthia Translator with Multi-API Support v9.0 - FIXED FOR POKEMON
 const EnhancedTranslationAPI = require('../data/Translation.js');
 const config = require('../config/config.js');
 
@@ -20,9 +19,88 @@ class SynthiaMultiTranslator {
         this.initializeBypassPatterns();
         this.initializeLanguagePatterns();
         this.initializeScamPatterns();
-        console.log('🚀 Synthia Multi-Translator v9.0 initialized with COMPREHENSIVE bypass detection');
+        console.log('🚀 Synthia Multi-Translator v9.0 initialized with Pokemon-aware bypass detection');
         console.log(`🔧 Total providers: ${Object.keys(this.enhancedAPI.apis).length}`);
         console.log(`🌍 Languages supported: ${this.enhancedAPI.supportedLanguages.size}`);
+        console.log('🎮 Pokemon trading protection: ENABLED');
+    }
+
+    // COMPREHENSIVE: Pokemon content detection - FIXED FOR .me AND .mysteryegg
+    isPokemonRelatedContent(text) {
+        const lowerContent = text.toLowerCase().trim();
+        
+        // 1. Pokemon file extensions
+        const pokemonFilePattern = /\.(pk[3-9]|pb[78]|pa[78]|pkm|3gpkm|ck3|bk4|rk4|sk2|xk3)(\s|$)/i;
+        if (pokemonFilePattern.test(text)) {
+            return true;
+        }
+        
+        // 2. Pokemon trading codes (.trade followed by numbers)
+        const tradingCodePattern = /\.trade\s+\d{4,8}/i;
+        if (tradingCodePattern.test(text)) {
+            return true;
+        }
+        
+        // 3. Pokemon mystery egg and .me commands (.me or .mysteryegg followed by numbers)
+        const meCommandPattern = /\.me\s+\d{4,8}/i;
+        const mysteryeggPattern = /\.mysteryegg\s+\d{4,8}/i;
+        if (meCommandPattern.test(text) || mysteryeggPattern.test(text)) {
+            return true;
+        }
+        
+        // 4. Pokemon battle team commands
+        if (lowerContent.includes('.bt ') || lowerContent.includes('.pokepaste')) {
+            return true;
+        }
+        
+        // 5. Pokemon stat terminology (2+ terms = Pokemon content)
+        const pokemonTerms = [
+            'shiny:', 'level:', 'ball:', 'ability:', 'nature:', 'evs:', 'ivs:', 'moves:', 'item:',
+            'tera type:', 'hidden power:', 'happiness:', 'ot:', 'tid:', 'gigantamax:',
+            'metlocation=', 'dusk ball', 'poke ball', 'ultra ball', 'master ball', 'beast ball',
+            'adamant', 'modest', 'jolly', 'timid', 'bold', 'impish', 'careful', 'calm',
+            'hasty', 'naive', 'serious', 'hardy', 'lonely', 'brave', 'relaxed', 'quiet',
+            'hp:', 'attack:', 'defense:', 'sp. atk:', 'sp. def:', 'speed:', '.me', '.mysteryegg'
+        ];
+        
+        const pokemonTermCount = pokemonTerms.filter(term => lowerContent.includes(term)).length;
+        
+        // 6. Common Pokemon names
+        const commonPokemonNames = [
+            'charizard', 'pikachu', 'mewtwo', 'mew', 'rayquaza', 'arceus', 'dialga', 'palkia',
+            'giratina', 'kyogre', 'groudon', 'lugia', 'ho-oh', 'celebi', 'jirachi', 'deoxys',
+            'darkrai', 'shaymin', 'victini', 'keldeo', 'meloetta', 'genesect', 'diancie',
+            'hoopa', 'volcanion', 'magearna', 'marshadow', 'zeraora', 'meltan', 'melmetal',
+            'zarude', 'calyrex', 'regidrago', 'regieleki', 'glastrier', 'spectrier',
+            'eevee', 'vaporeon', 'jolteon', 'flareon', 'espeon', 'umbreon', 'leafeon',
+            'glaceon', 'sylveon', 'lucario', 'garchomp', 'dragapult', 'mimikyu', 'toxapex',
+            'ferrothorn', 'rotom', 'landorus', 'thundurus', 'tornadus', 'reshiram', 'zekrom',
+            'kyurem', 'xerneas', 'yveltal', 'zygarde', 'solgaleo', 'lunala', 'necrozma',
+            'zacian', 'zamazenta', 'eternatus', 'koraidon', 'miraidon', 'gimmighoul', 'gholdengo'
+        ];
+        
+        const pokemonNameCount = commonPokemonNames.filter(name => lowerContent.includes(name)).length;
+        
+        // 7. Competitive Pokemon formats
+        const competitiveTerms = [
+            'ou', 'uu', 'ru', 'nu', 'pu', 'ubers', 'ag', 'vgc', 'bss', 'doubles',
+            'smogon', 'showdown', 'teambuilder', 'tier', 'ban list', 'usage stats'
+        ];
+        const competitiveTermCount = competitiveTerms.filter(term => lowerContent.includes(term)).length;
+        
+        // COMPREHENSIVE: Multiple detection criteria - FIXED TO INCLUDE .me AND .mysteryegg
+        return (
+            pokemonTermCount >= 2 || // Has Pokemon stats/terms
+            (lowerContent.includes('.trade') && pokemonTermCount >= 1) || // .trade with Pokemon terms
+            (lowerContent.includes('.trade') && pokemonNameCount >= 1) || // .trade with Pokemon names
+            (lowerContent.includes('.trade') && competitiveTermCount >= 1) || // .trade with competitive terms
+            (lowerContent.includes('.me') && pokemonTermCount >= 1) || // .me with Pokemon terms
+            (lowerContent.includes('.me') && pokemonNameCount >= 1) || // .me with Pokemon names
+            (lowerContent.includes('.mysteryegg') && pokemonTermCount >= 1) || // .mysteryegg with Pokemon terms
+            (lowerContent.includes('.mysteryegg') && pokemonNameCount >= 1) || // .mysteryegg with Pokemon names
+            (lowerContent.includes('.bt') && pokemonTermCount >= 1) || // Battle team command
+            (lowerContent.includes('.pokepaste') && lowerContent.includes('pokepast.es')) // Pokepaste links
+        );
     }
 
     initializeBypassPatterns() {
@@ -64,7 +142,7 @@ class SynthiaMultiTranslator {
             "'", '°', '•', '·', '‐', '‑', '‒', '–', '—', '―'
         ];
 
-        console.log('🛡️ Enhanced bypass detection patterns initialized');
+        console.log('🛡️ Enhanced bypass detection patterns initialized with Pokemon protection');
     }
 
     initializeScamPatterns() {
@@ -84,11 +162,17 @@ class SynthiaMultiTranslator {
             'steam key free click', 'game key giveaway click', 'cs:go skins free click'
         ]);
         
-        console.log('🛡️ ENHANCED: Scam patterns initialized');
+        console.log('🛡️ Scam patterns initialized (Pokemon trading protected)');
     }
 
-    // COMPREHENSIVE: Bypass normalization
+    // COMPREHENSIVE: Bypass normalization with Pokemon awareness
     normalizeBypassAttempts(text) {
+        // FIRST: Check if this is Pokemon content - if so, don't normalize
+        if (this.isPokemonRelatedContent(text)) {
+            console.log(`🎮 Pokemon content detected - skipping bypass normalization: "${text.slice(0, 50)}..."`);
+            return text.toLowerCase();
+        }
+
         let normalized = text.toLowerCase();
         
         // Step 1: Handle elongated characters (2+ repetitions)
@@ -107,7 +191,7 @@ class SynthiaMultiTranslator {
         // Step 4: Remove extra spaces between characters
         normalized = normalized.replace(/\b([a-zA-Z])\s+(?=[a-zA-Z])/g, '$1');
         
-        // Step 5: Handle leetspeak and numbers
+        // Step 5: Handle leetspeak and numbers (BUT NOT in Pokemon context)
         const leetSubstitutions = {
             '0': 'o', '1': 'i', '2': 'z', '3': 'e', '4': 'a',
             '5': 's', '6': 'g', '7': 't', '8': 'b', '9': 'g'
@@ -133,8 +217,14 @@ class SynthiaMultiTranslator {
         return normalized.trim();
     }
 
-    // Detect bypassing attempts with detailed reporting
+    // FIXED: Detect bypassing attempts with Pokemon context awareness
     detectBypassAttempts(originalText, normalizedText) {
+        // FIRST: Check if this is Pokemon content - if so, no bypass detection
+        if (this.isPokemonRelatedContent(originalText)) {
+            console.log(`🎮 Pokemon content detected - skipping bypass detection: "${originalText.slice(0, 50)}..."`);
+            return [];
+        }
+
         const bypassAttempts = [];
         
         // Check for elongation
@@ -183,14 +273,24 @@ class SynthiaMultiTranslator {
             });
         }
         
-        // Check for leetspeak
+        // FIXED: Check for leetspeak (but exclude Pokemon trading codes)
         const leetMatches = originalText.match(/[a-zA-Z]*[0-9]+[a-zA-Z]*/gi);
         if (leetMatches && leetMatches.length > 0) {
-            bypassAttempts.push({
-                type: 'leetspeak',
-                patterns: leetMatches,
-                severity: 2
+            // Filter out Pokemon trading codes and .me/.mysteryegg commands
+            const nonPokemonLeetMatches = leetMatches.filter(match => {
+                // Don't flag if it's a trading code pattern
+                return !(/\.trade\s+\d{4,8}/i.test(originalText) && /^\d{4,8}$/.test(match)) &&
+                       !(/\.me\s+\d{4,8}/i.test(originalText) && /^\d{4,8}$/.test(match)) &&
+                       !(/\.mysteryegg\s+\d{4,8}/i.test(originalText) && /^\d{4,8}$/.test(match));
             });
+            
+            if (nonPokemonLeetMatches.length > 0) {
+                bypassAttempts.push({
+                    type: 'leetspeak',
+                    patterns: nonPokemonLeetMatches,
+                    severity: 2
+                });
+            }
         }
         
         return bypassAttempts;
@@ -238,7 +338,7 @@ class SynthiaMultiTranslator {
         this.initializeVietnamesePatterns();
         this.initializeIndonesianPatterns();
         
-        console.log(`🧠 COMPREHENSIVE: Initialized bypass-aware toxicity patterns for ${this.toxicityDatabase.size} languages`);
+        console.log(`🧠 COMPREHENSIVE: Initialized Pokemon-aware toxicity patterns for ${this.toxicityDatabase.size} languages`);
     }
 
     // ENHANCED ENGLISH PATTERNS with comprehensive bypass detection - FIXED REGEX
@@ -304,8 +404,7 @@ class SynthiaMultiTranslator {
         ];
         
         for (const slur of extremeSlurs) {
-            // FIXED: Remove the problematic + quantifier
-            const basePattern = slur.replace(/[*_@\-\.]/g, '[a-z0-9\\*\\_\\@\\-\\.\\|\\+]*');
+            const basePattern = slur.replace(/[*_@\-\.]/g, '[a-z0-9\\*\\_\\@\\-\\.\\|\\+]*?');
             patterns.push({ 
                 pattern: new RegExp(`\\b${basePattern}\\b`, 'gi'), 
                 weight: 5,
@@ -362,7 +461,7 @@ class SynthiaMultiTranslator {
         ];
         
         for (const profanity of severeProfanity) {
-            const basePattern = profanity.replace(/[*_\s\-\.]/g, '[a-z0-9\\*\\_\\-\\.\\s\\|\\+]*');
+            const basePattern = profanity.replace(/[*_\s\-\.]/g, '[a-z0-9\\*\\_\\-\\.\\s\\|\\+]*?');
             patterns.push({ 
                 pattern: new RegExp(`\\b${basePattern}\\b`, 'gi'), 
                 weight: 3,
@@ -417,8 +516,7 @@ class SynthiaMultiTranslator {
         ];
         
         for (const profanity of moderateProfanity) {
-            // FIXED: Use ? quantifier instead of problematic pattern
-            const basePattern = profanity.replace(/[*_]/g, '[a-z0-9\\*\\_\\-\\.]?');
+            const basePattern = profanity.replace(/[*_]/g, '[a-z0-9\\*\\_\\-\\.]??');
             patterns.push({ 
                 pattern: new RegExp(`\\b${basePattern}\\b`, 'gi'), 
                 weight: 2,
@@ -440,7 +538,7 @@ class SynthiaMultiTranslator {
         ];
         
         for (const insult of mildInsults) {
-            const basePattern = insult.replace(/[*_\s]/g, '[a-z0-9\\*\\_\\-\\.\\s]*');
+            const basePattern = insult.replace(/[*_\s]/g, '[a-z0-9\\*\\_\\-\\.\\s]*?');
             patterns.push({ 
                 pattern: new RegExp(`\\b${basePattern}\\b`, 'gi'), 
                 weight: 1,
@@ -468,7 +566,7 @@ class SynthiaMultiTranslator {
         ];
         
         for (const content of severeContent) {
-            const basePattern = content.replace(/[*_\s]/g, '[a-zA-ZáéíóúñÁÉÍÓÚÑ\\*\\_\\-\\.\\s]*');
+            const basePattern = content.replace(/[*_\s]/g, '[a-zA-ZáéíóúñÁÉÍÓÚÑ\\*\\_\\-\\.\\s]*?');
             patterns.push({ pattern: new RegExp(`\\b${basePattern}\\b`, 'gi'), weight: 6 });
         }
         
@@ -482,7 +580,7 @@ class SynthiaMultiTranslator {
         ];
         
         for (const content of severeContent2) {
-            const basePattern = content.replace(/[*_\s]/g, '[a-zA-ZáéíóúñÁÉÍÓÚÑ\\*\\_\\-\\.\\s]*');
+            const basePattern = content.replace(/[*_\s]/g, '[a-zA-ZáéíóúñÁÉÍÓÚÑ\\*\\_\\-\\.\\s]*?');
             patterns.push({ pattern: new RegExp(`\\b${basePattern}\\b`, 'gi'), weight: 4 });
         }
         
@@ -497,7 +595,7 @@ class SynthiaMultiTranslator {
         ];
         
         for (const content of moderateContent) {
-            const basePattern = content.replace(/[*_]/g, '[a-zA-ZáéíóúñÁÉÍÓÚÑ\\*\\_\\-\\.]?');
+            const basePattern = content.replace(/[*_]/g, '[a-zA-ZáéíóúñÁÉÍÓÚÑ\\*\\_\\-\\.]??');
             patterns.push({ pattern: new RegExp(`\\b${basePattern}\\b`, 'gi'), weight: 2 });
         }
         
@@ -520,7 +618,7 @@ class SynthiaMultiTranslator {
         ];
         
         for (const content of severeContent) {
-            const basePattern = content.replace(/[*_\s\-]/g, '[a-zA-ZàâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ\\*\\_\\-\\.\\s]*');
+            const basePattern = content.replace(/[*_\s\-]/g, '[a-zA-ZàâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ\\*\\_\\-\\.\\s]*?');
             patterns.push({ pattern: new RegExp(`\\b${basePattern}\\b`, 'gi'), weight: 6 });
         }
         
@@ -533,7 +631,7 @@ class SynthiaMultiTranslator {
         ];
         
         for (const content of moderateContent) {
-            const basePattern = content.replace(/[*_]/g, '[a-zA-ZàâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ\\*\\_\\-\\.]?');
+            const basePattern = content.replace(/[*_]/g, '[a-zA-ZàâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ\\*\\_\\-\\.]??');
             patterns.push({ pattern: new RegExp(`\\b${basePattern}\\b`, 'gi'), weight: 2 });
         }
         
@@ -543,9 +641,6 @@ class SynthiaMultiTranslator {
             culturalSensitivity: 'medium'
         });
     }
-
-    // Add all remaining language patterns (German, Russian, Portuguese, Italian, etc.)
-    // [For brevity, I'll include just a few more key ones - you can add the rest using the same pattern]
 
     initializeGermanPatterns() {
         const patterns = [];
@@ -557,7 +652,7 @@ class SynthiaMultiTranslator {
         ];
         
         for (const content of severeContent) {
-            const basePattern = content.replace(/[*_\s\-]/g, '[a-zA-ZäöüßÄÖÜ\\*\\_\\-\\.\\s]*');
+            const basePattern = content.replace(/[*_\s\-]/g, '[a-zA-ZäöüßÄÖÜ\\*\\_\\-\\.\\s]*?');
             patterns.push({ pattern: new RegExp(`\\b${basePattern}\\b`, 'gi'), weight: 6 });
         }
         
@@ -565,11 +660,12 @@ class SynthiaMultiTranslator {
             'scheiße', 'sche*ße', 'sch*iße', 'schei*e', 'sch3iße',
             'scheisse', 'sche*sse', 'schei*se', 'sch*isse',
             'fick', 'f*ck', 'f_ck', 'fіck', 'ƒick', 'fісk',
-            'arsch', 'a*sch', 'a_sch', 'ar*ch', 'αrsch'
+            'arsch', 'a*sch', 'a_sch', 'ar*ch', 'αrsch',
+            'hurensohn', 'huren*ohn', 'h*rensohn', 'hurens*hn'
         ];
         
         for (const content of moderateContent) {
-            const basePattern = content.replace(/[*_]/g, '[a-zA-ZäöüßÄÖÜ\\*\\_\\-\\.]?');
+            const basePattern = content.replace(/[*_]/g, '[a-zA-ZäöüßÄÖÜ\\*\\_\\-\\.]??');
             patterns.push({ pattern: new RegExp(`\\b${basePattern}\\b`, 'gi'), weight: 2 });
         }
         
@@ -590,7 +686,7 @@ class SynthiaMultiTranslator {
         ];
         
         for (const content of severeContent) {
-            const basePattern = content.replace(/[*_\s]/g, '[а-яёА-ЯЁ\\*\\_\\-\\.\\s]*');
+            const basePattern = content.replace(/[*_\s]/g, '[а-яёА-ЯЁ\\*\\_\\-\\.\\s]*?');
             patterns.push({ pattern: new RegExp(`\\b${basePattern}\\b`, 'gi'), weight: 6 });
         }
         
@@ -598,11 +694,12 @@ class SynthiaMultiTranslator {
             'сука', 'с*ка', 'с_ка', 'сυка', 'ѕука', 'суκа',
             'блядь', 'бл*дь', 'бл_дь', 'бля*ь', 'блядь', 'блyдь',
             'хуй', 'х*й', 'х_й', 'хυй', 'χуй', 'xyй',
-            'пизда', 'п*зда', 'пи*да', 'піɜда', 'пιзда'
+            'пизда', 'п*зда', 'пи*да', 'піɜда', 'пιзда',
+            'говно', 'г*вно', 'го*но', 'гοвно', 'гoвно'
         ];
         
         for (const content of moderateContent) {
-            const basePattern = content.replace(/[*_]/g, '[а-яёА-ЯЁ\\*\\_\\-\\.]?');
+            const basePattern = content.replace(/[*_]/g, '[а-яёА-ЯЁ\\*\\_\\-\\.]??');
             patterns.push({ pattern: new RegExp(`\\b${basePattern}\\b`, 'gi'), weight: 2 });
         }
         
@@ -613,14 +710,32 @@ class SynthiaMultiTranslator {
         });
     }
 
-    // Add simplified versions of all other languages
     initializePortuguesePatterns() {
-        const patterns = [
-            { pattern: /\b(se\s*mata|vai\s*morrer|suicida)\b/gi, weight: 6 },
-            { pattern: /\b(filho da puta|vai se foder|puta que pariu)\b/gi, weight: 4 },
-            { pattern: /\b(merda|porra|caralho|foda|puta|cu)\b/gi, weight: 2 },
-            { pattern: /\b(idiota|estúpido|otário)\b/gi, weight: 1 }
+        const patterns = [];
+        
+        const severeContent = [
+            'se mata', 'se*ata', 's* mata', 'se-mata',
+            'vai morrer', 'v*i morrer', 'vai m*rrer', 'vai*morrer',
+            'suicida', 'su*cida', 'suic*da', 'suicіda'
         ];
+        
+        for (const content of severeContent) {
+            const basePattern = content.replace(/[*_\s\-]/g, '[a-zA-ZáàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ\\*\\_\\-\\.\\s]*?');
+            patterns.push({ pattern: new RegExp(`\\b${basePattern}\\b`, 'gi'), weight: 6 });
+        }
+        
+        const moderateContent = [
+            'merda', 'm*rda', 'm_rda', 'mer*a', 'mеrda',
+            'porra', 'p*rra', 'por*a', 'p*rra', 'pοrra',
+            'caralho', 'car*lho', 'cara*ho', 'c*ralho',
+            'puta', 'p*ta', 'pu*a', 'pυta', 'рuta',
+            'cu', 'c*', 'сu', 'ςu'
+        ];
+        
+        for (const content of moderateContent) {
+            const basePattern = content.replace(/[*_]/g, '[a-zA-ZáàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ\\*\\_\\-\\.]??');
+            patterns.push({ pattern: new RegExp(`\\b${basePattern}\\b`, 'gi'), weight: 2 });
+        }
         
         this.toxicityDatabase.set('pt', {
             patterns: patterns,
@@ -630,12 +745,31 @@ class SynthiaMultiTranslator {
     }
 
     initializeItalianPatterns() {
-        const patterns = [
-            { pattern: /\b(ucciditi|ammazzati|crepa)\b/gi, weight: 6 },
-            { pattern: /\b(vaffanculo|figlio di puttana|merda di merda)\b/gi, weight: 4 },
-            { pattern: /\b(merda|cazzo|stronzo|puttana|figa)\b/gi, weight: 2 },
-            { pattern: /\b(idiota|stupido|coglione)\b/gi, weight: 1 }
+        const patterns = [];
+        
+        const severeContent = [
+            'ucciditi', 'uccid*ti', 'ucc*diti', 'uccidіti',
+            'ammazzati', 'ammaz*ati', 'amm*zzati', 'ammazzatі',
+            'crepa', 'cr*pa', 'cre*a', 'сrepa'
         ];
+        
+        for (const content of severeContent) {
+            const basePattern = content.replace(/[*_\s]/g, '[a-zA-ZàèéìíîòóùúÀÈÉÌÍÎÒÓÙÚ\\*\\_\\-\\.\\s]*?');
+            patterns.push({ pattern: new RegExp(`\\b${basePattern}\\b`, 'gi'), weight: 6 });
+        }
+        
+        const moderateContent = [
+            'merda', 'm*rda', 'mer*a', 'mеrda',
+            'cazzo', 'c*zzo', 'caz*o', 'сazzo',
+            'stronzo', 'str*nzo', 'stro*zo', 'ѕtronzo',
+            'puttana', 'putt*na', 'put*ana', 'рuttana',
+            'figa', 'f*ga', 'fi*a', 'fіga'
+        ];
+        
+        for (const content of moderateContent) {
+            const basePattern = content.replace(/[*_]/g, '[a-zA-ZàèéìíîòóùúÀÈÉÌÍÎÒÓÙÚ\\*\\_\\-\\.]??');
+            patterns.push({ pattern: new RegExp(`\\b${basePattern}\\b`, 'gi'), weight: 2 });
+        }
         
         this.toxicityDatabase.set('it', {
             patterns: patterns,
@@ -646,9 +780,9 @@ class SynthiaMultiTranslator {
 
     initializeJapanesePatterns() {
         const patterns = [
-            { pattern: /死ね|殺す|自殺しろ/gi, weight: 6 },
-            { pattern: /バカ|馬鹿|ばか|アホ|クソ|くそ|ちくしょう/gi, weight: 2 },
-            { pattern: /ブス|デブ|きもい/gi, weight: 1 }
+            { pattern: /死ね|殺す|自殺しろ|死んで|殺して/gi, weight: 6 },
+            { pattern: /バカ|馬鹿|ばか|アホ|あほ|クソ|くそ|ちくしょう|畜生/gi, weight: 2 },
+            { pattern: /ブス|デブ|でぶ|きもい|キモい|気持ち悪い/gi, weight: 1 }
         ];
         
         this.toxicityDatabase.set('ja', {
@@ -660,9 +794,9 @@ class SynthiaMultiTranslator {
 
     initializeChinesePatterns() {
         const patterns = [
-            { pattern: /去死|他妈的|杀死你/gi, weight: 6 },
-            { pattern: /傻逼|操|妈的|混蛋|王八蛋|狗屎/gi, weight: 2 },
-            { pattern: /白痴|蠢货|笨蛋/gi, weight: 1 }
+            { pattern: /去死|他妈的|杀死你|死吧|滚蛋/gi, weight: 6 },
+            { pattern: /傻逼|操|妈的|混蛋|王八蛋|狗屎|白痴|垃圾/gi, weight: 2 },
+            { pattern: /白痴|蠢货|笨蛋|傻瓜|弱智/gi, weight: 1 }
         ];
         
         this.toxicityDatabase.set('zh', {
@@ -674,10 +808,10 @@ class SynthiaMultiTranslator {
 
     initializeArabicPatterns() {
         const patterns = [
-            { pattern: /اقتل نفسك|موت|اذهب للجحيم/gi, weight: 6 },
-            { pattern: /كلب ابن كلب|لعنة عليك/gi, weight: 4 },
-            { pattern: /كلب|حمار|غبي|احمق|قذر/gi, weight: 2 },
-            { pattern: /مجنون/gi, weight: 1 }
+            { pattern: /اقتل نفسك|موت|اذهب للجحيم|امت|اموت/gi, weight: 6 },
+            { pattern: /كلب ابن كلب|لعنة عليك|يلعن ابوك/gi, weight: 4 },
+            { pattern: /كلب|حمار|غبي|احمق|قذر|وسخ/gi, weight: 2 },
+            { pattern: /مجنون|أحمق|غبي/gi, weight: 1 }
         ];
         
         this.toxicityDatabase.set('ar', {
@@ -689,10 +823,10 @@ class SynthiaMultiTranslator {
 
     initializeHindiPatterns() {
         const patterns = [
-            { pattern: /मर जा|खुद को मार डाल|जहन्नुम में जा/gi, weight: 6 },
-            { pattern: /मादरचोद|भोसड़ी के|रंडी|हरामी/gi, weight: 4 },
-            { pattern: /चुतिया|गांडू|साला|कमीना/gi, weight: 2 },
-            { pattern: /बेवकूफ|गधा|मूर्ख/gi, weight: 1 }
+            { pattern: /मर जा|खुद को मार डाल|जहन्नुम में जा|मौत हो जा/gi, weight: 6 },
+            { pattern: /मादरचोद|भोसड़ी के|रंडी|हरामी|कमीने/gi, weight: 4 },
+            { pattern: /चुतिया|गांडू|साला|कमीना|हरामखोर/gi, weight: 2 },
+            { pattern: /बेवकूफ|गधा|मूर्ख|अहमक/gi, weight: 1 }
         ];
         
         this.toxicityDatabase.set('hi', {
@@ -702,10 +836,11 @@ class SynthiaMultiTranslator {
         });
     }
 
-    // Additional simplified language patterns
     initializeDutchPatterns() {
         const patterns = [
-            { pattern: /\b(kut|shit|klootzak|hoer|neuken|kanker|tering|godverdomme)\b/gi, weight: 2 }
+            { pattern: /\b(ga\s*dood|sterf|vermoord\s*jezelf)\b/gi, weight: 6 },
+            { pattern: /\b(kut|shit|klootzak|hoer|neuken|kanker|tering|godverdomme)\b/gi, weight: 2 },
+            { pattern: /\b(idioot|stom|dom|sukkel)\b/gi, weight: 1 }
         ];
         
         this.toxicityDatabase.set('nl', {
@@ -717,7 +852,9 @@ class SynthiaMultiTranslator {
 
     initializePolishPatterns() {
         const patterns = [
-            { pattern: /\b(kurwa|gówno|chuj|pierdolić|zajebać|skurwysyn)\b/gi, weight: 2 }
+            { pattern: /\b(zabij\s*się|umieraj|idź\s*do\s*diabła)\b/gi, weight: 6 },
+            { pattern: /\b(kurwa|gówno|chuj|pierdolić|zajebać|skurwysyn|suka|dziwka)\b/gi, weight: 2 },
+            { pattern: /\b(idiota|głupi|debil|kretyn)\b/gi, weight: 1 }
         ];
         
         this.toxicityDatabase.set('pl', {
@@ -729,7 +866,9 @@ class SynthiaMultiTranslator {
 
     initializeTurkishPatterns() {
         const patterns = [
-            { pattern: /\b(amk|orospu|piç|siktir|götünü|sikeyim|ananı|amına|koyayım)\b/gi, weight: 2 }
+            { pattern: /\b(öl|kendini\s*öldür|git\s*öl|cehennemde\s*yan)\b/gi, weight: 6 },
+            { pattern: /\b(amk|orospu|piç|siktir|götünü|sikeyim|ananı|amına|koyayım)\b/gi, weight: 2 },
+            { pattern: /\b(aptal|salak|gerizekalı|mal)\b/gi, weight: 1 }
         ];
         
         this.toxicityDatabase.set('tr', {
@@ -741,9 +880,9 @@ class SynthiaMultiTranslator {
 
     initializeKoreanPatterns() {
         const patterns = [
-            { pattern: /죽어|죽*어|시발|ㅅㅂ/gi, weight: 6 },
-            { pattern: /개새끼|개*새끼|개색기/gi, weight: 4 },
-            { pattern: /병신|병*신|ㅂㅅ/gi, weight: 3 }
+            { pattern: /죽어|죽*어|시발|ㅅㅂ|자살해|뒤져/gi, weight: 6 },
+            { pattern: /개새끼|개*새끼|개색기|씨발|씨*발/gi, weight: 4 },
+            { pattern: /병신|병*신|ㅂㅅ|바보|멍청이/gi, weight: 3 }
         ];
         
         this.toxicityDatabase.set('ko', {
@@ -753,119 +892,212 @@ class SynthiaMultiTranslator {
         });
     }
 
-    // Continue with remaining languages...
     initializeSwedishPatterns() {
         const patterns = [
-            { pattern: /\b(fan|skit|fitta|kuk|helvete|jävla|hora|knulla)\b/gi, weight: 2 }
+            { pattern: /\b(dö|död|ta\s*livet\s*av\s*dig)\b/gi, weight: 6 },
+            { pattern: /\b(fan|skit|fitta|kuk|helvete|jävla|hora|knulla)\b/gi, weight: 2 },
+            { pattern: /\b(idiot|dum|korkad)\b/gi, weight: 1 }
         ];
-        this.toxicityDatabase.set('sv', { patterns, commonWords: ['och', 'en', 'ett'], culturalSensitivity: 'medium' });
+        this.toxicityDatabase.set('sv', { 
+            patterns, 
+            commonWords: ['och', 'en', 'ett'], 
+            culturalSensitivity: 'medium' 
+        });
     }
 
     initializeNorwegianPatterns() {
         const patterns = [
-            { pattern: /\b(faen|dritt|fitte|pikk|helvete|jævla|hore|knulle)\b/gi, weight: 2 }
+            { pattern: /\b(dø|drep\s*deg\s*selv|ta\s*livet\s*av\s*deg)\b/gi, weight: 6 },
+            { pattern: /\b(faen|dritt|fitte|pikk|helvete|jævla|hore|knulle)\b/gi, weight: 2 },
+            { pattern: /\b(idiot|dum|tulling)\b/gi, weight: 1 }
         ];
-        this.toxicityDatabase.set('no', { patterns, commonWords: ['og', 'en', 'et'], culturalSensitivity: 'medium' });
+        this.toxicityDatabase.set('no', { 
+            patterns, 
+            commonWords: ['og', 'en', 'et'], 
+            culturalSensitivity: 'medium' 
+        });
     }
 
     initializeDanishPatterns() {
         const patterns = [
-            { pattern: /\b(fanden|lort|kusse|pik|helvede|fucking|luder|kneppe)\b/gi, weight: 2 }
+            { pattern: /\b(dø|dræb\s*dig\s*selv|tag\s*livet\s*af\s*dig)\b/gi, weight: 6 },
+            { pattern: /\b(fanden|lort|kusse|pik|helvede|fucking|luder|kneppe)\b/gi, weight: 2 },
+            { pattern: /\b(idiot|dum|tosset)\b/gi, weight: 1 }
         ];
-        this.toxicityDatabase.set('da', { patterns, commonWords: ['og', 'en', 'et'], culturalSensitivity: 'medium' });
+        this.toxicityDatabase.set('da', { 
+            patterns, 
+            commonWords: ['og', 'en', 'et'], 
+            culturalSensitivity: 'medium' 
+        });
     }
 
     initializeFinnishPatterns() {
         const patterns = [
-            { pattern: /\b(paska|vittu|saatana|perkele|helvetti|huora|nussii)\b/gi, weight: 2 }
+            { pattern: /\b(kuole|tapa\s*itsesi|mene\s*helvettiin)\b/gi, weight: 6 },
+            { pattern: /\b(paska|vittu|saatana|perkele|helvetti|huora|nussii)\b/gi, weight: 2 },
+            { pattern: /\b(tyhmä|idiootti|hullu)\b/gi, weight: 1 }
         ];
-        this.toxicityDatabase.set('fi', { patterns, commonWords: ['ja', 'on', 'ei'], culturalSensitivity: 'medium' });
+        this.toxicityDatabase.set('fi', { 
+            patterns, 
+            commonWords: ['ja', 'on', 'ei'], 
+            culturalSensitivity: 'medium' 
+        });
     }
 
     initializeCzechPatterns() {
         const patterns = [
-            { pattern: /\b(hovno|kurva|píča|čůrák|zasranej|děvka|jebat)\b/gi, weight: 2 }
+            { pattern: /\b(zabij\s*se|umři|jdi\s*do\s*pekla)\b/gi, weight: 6 },
+            { pattern: /\b(hovno|kurva|píča|čůrák|zasranej|děvka|jebat)\b/gi, weight: 2 },
+            { pattern: /\b(idiot|hlupák|debil)\b/gi, weight: 1 }
         ];
-        this.toxicityDatabase.set('cs', { patterns, commonWords: ['a', 'je', 'není'], culturalSensitivity: 'medium' });
+        this.toxicityDatabase.set('cs', { 
+            patterns, 
+            commonWords: ['a', 'je', 'není'], 
+            culturalSensitivity: 'medium' 
+        });
     }
 
     initializeHungarianPatterns() {
         const patterns = [
-            { pattern: /\b(szar|kurva|fasz|geci|picsa|baszd|meg|faszt|anyád)\b/gi, weight: 2 }
+            { pattern: /\b(halj\s*meg|öld\s*meg\s*magad|menj\s*a\s*pokolba)\b/gi, weight: 6 },
+            { pattern: /\b(szar|kurva|fasz|geci|picsa|baszd|meg|faszt|anyád)\b/gi, weight: 2 },
+            { pattern: /\b(idióta|hülye|ostoba)\b/gi, weight: 1 }
         ];
-        this.toxicityDatabase.set('hu', { patterns, commonWords: ['és', 'egy', 'ez'], culturalSensitivity: 'medium' });
+        this.toxicityDatabase.set('hu', { 
+            patterns, 
+            commonWords: ['és', 'egy', 'ez'], 
+            culturalSensitivity: 'medium' 
+        });
     }
 
     initializeRomanianPatterns() {
         const patterns = [
-            { pattern: /\b(rahat|pulă|muie|futut|curvă|pizda|bagă|mă|în)\b/gi, weight: 2 }
+            { pattern: /\b(mori|omoară\-te|du\-te\s*în\s*iad)\b/gi, weight: 6 },
+            { pattern: /\b(rahat|pulă|muie|futut|curvă|pizda|bagă|mă|în)\b/gi, weight: 2 },
+            { pattern: /\b(idiot|prost|tâmpit)\b/gi, weight: 1 }
         ];
-        this.toxicityDatabase.set('ro', { patterns, commonWords: ['și', 'un', 'o'], culturalSensitivity: 'medium' });
+        this.toxicityDatabase.set('ro', { 
+            patterns, 
+            commonWords: ['și', 'un', 'o'], 
+            culturalSensitivity: 'medium' 
+        });
     }
 
     initializeBulgarianPatterns() {
         const patterns = [
-            { pattern: /\b(лайно|курва|мръсник)\b/gi, weight: 2 }
+            { pattern: /\b(умри|убий\s*се|иди\s*в\s*ада)\b/gi, weight: 6 },
+            { pattern: /\b(лайно|курва|мръсник|путка)\b/gi, weight: 2 },
+            { pattern: /\b(идиот|глупак|тъп)\b/gi, weight: 1 }
         ];
-        this.toxicityDatabase.set('bg', { patterns, commonWords: ['и', 'е', 'на'], culturalSensitivity: 'medium' });
+        this.toxicityDatabase.set('bg', { 
+            patterns, 
+            commonWords: ['и', 'е', 'на'], 
+            culturalSensitivity: 'medium' 
+        });
     }
 
     initializeCroatianPatterns() {
         const patterns = [
-            { pattern: /\b(govno|kurva|pička|jebem|sranje)\b/gi, weight: 2 }
+            { pattern: /\b(umri|ubij\s*se|idi\s*u\s*pakao)\b/gi, weight: 6 },
+            { pattern: /\b(govno|kurva|pička|jebem|sranje|pizda)\b/gi, weight: 2 },
+            { pattern: /\b(idiot|glup|budala)\b/gi, weight: 1 }
         ];
-        this.toxicityDatabase.set('hr', { patterns, commonWords: ['i', 'je', 'u'], culturalSensitivity: 'medium' });
+        this.toxicityDatabase.set('hr', { 
+            patterns, 
+            commonWords: ['i', 'je', 'u'], 
+            culturalSensitivity: 'medium' 
+        });
     }
 
     initializeSerbianPatterns() {
         const patterns = [
-            { pattern: /\b(говно|курва|пичка|јебем)\b/gi, weight: 2 }
+            { pattern: /\b(умри|убиј\s*се|иди\s*у\s*пакао)\b/gi, weight: 6 },
+            { pattern: /\b(говно|курва|пичка|јебем|срање)\b/gi, weight: 2 },
+            { pattern: /\b(идиот|глуп|будала)\b/gi, weight: 1 }
         ];
-        this.toxicityDatabase.set('sr', { patterns, commonWords: ['и', 'је', 'у'], culturalSensitivity: 'medium' });
+        this.toxicityDatabase.set('sr', { 
+            patterns, 
+            commonWords: ['и', 'је', 'у'], 
+            culturalSensitivity: 'medium' 
+        });
     }
 
     initializeUkrainianPatterns() {
         const patterns = [
-            { pattern: /\b(лайно|сука|блядь|хуй)\b/gi, weight: 2 }
+            { pattern: /\b(помри|вбий\s*себе|йди\s*в\s*пекло)\b/gi, weight: 6 },
+            { pattern: /\b(лайно|сука|блядь|хуй|пизда)\b/gi, weight: 2 },
+            { pattern: /\b(ідіот|дурень|тупий)\b/gi, weight: 1 }
         ];
-        this.toxicityDatabase.set('uk', { patterns, commonWords: ['і', 'у', 'на'], culturalSensitivity: 'high' });
+        this.toxicityDatabase.set('uk', { 
+            patterns, 
+            commonWords: ['і', 'у', 'на'], 
+            culturalSensitivity: 'high' 
+        });
     }
 
     initializeGreekPatterns() {
         const patterns = [
-            { pattern: /\b(σκατά|μαλάκας|γαμώ|πουτάνα)\b/gi, weight: 2 }
+            { pattern: /\b(πεθανε|σκοτώσου|πάνε\s*στον\s*διάβολο)\b/gi, weight: 6 },
+            { pattern: /\b(σκατά|μαλάκας|γαμώ|πουτάνα|αρχίδι)\b/gi, weight: 2 },
+            { pattern: /\b(βλάκας|χαζός|κρετίνος)\b/gi, weight: 1 }
         ];
-        this.toxicityDatabase.set('el', { patterns, commonWords: ['και', 'ο', 'η'], culturalSensitivity: 'medium' });
+        this.toxicityDatabase.set('el', { 
+            patterns, 
+            commonWords: ['και', 'ο', 'η'], 
+            culturalSensitivity: 'medium' 
+        });
     }
 
     initializeHebrewPatterns() {
         const patterns = [
-            { pattern: /\b(חרא|זונה|כוס)\b/gi, weight: 2 }
+            { pattern: /\b(מות|הרוג\s*את\s*עצמך|לך\s*לגיהנום)\b/gi, weight: 6 },
+            { pattern: /\b(חרא|זונה|כוס|זין|שרמוטה)\b/gi, weight: 2 },
+            { pattern: /\b(אידיוט|טיפש|מטומטם)\b/gi, weight: 1 }
         ];
-        this.toxicityDatabase.set('he', { patterns, commonWords: ['את', 'של', 'על'], culturalSensitivity: 'very high' });
+        this.toxicityDatabase.set('he', { 
+            patterns, 
+            commonWords: ['את', 'של', 'על'], 
+            culturalSensitivity: 'very high' 
+        });
     }
 
     initializeThaiPatterns() {
         const patterns = [
-            { pattern: /ไอ้สัตว์|ไอ้ห*ว|อีสัตว์/gi, weight: 3 },
-            { pattern: /กู|ก*|ķู/gi, weight: 2 },
-            { pattern: /มึง|ม*ง|μึง/gi, weight: 2 }
+            { pattern: /ตาย|ฆ่าตัวตาย|ไปตาย|ไปนรก/gi, weight: 6 },
+            { pattern: /ไอ้สัตว์|ไอ้ห*ว|อีสัตว์|สัส|ระยำ/gi, weight: 3 },
+            { pattern: /กู|ก*|ķู|มึง|ม*ง|μึง/gi, weight: 2 }
         ];
-        this.toxicityDatabase.set('th', { patterns, commonWords: ['ที่', 'และ', 'ใน'], culturalSensitivity: 'very high' });
+        this.toxicityDatabase.set('th', { 
+            patterns, 
+            commonWords: ['ที่', 'และ', 'ใน'], 
+            culturalSensitivity: 'very high' 
+        });
     }
 
     initializeVietnamesePatterns() {
         const patterns = [
-            { pattern: /\b(đụ|cặc|lồn|đĩ|chó)\b/gi, weight: 2 }
+            { pattern: /\b(chết\s*đi|tự\s*tử|xuống\s*địa\s*ngục)\b/gi, weight: 6 },
+            { pattern: /\b(đụ|cặc|lồn|đĩ|chó|óc\s*chó)\b/gi, weight: 2 },
+            { pattern: /\b(ngu|đần|khùng|điên)\b/gi, weight: 1 }
         ];
-        this.toxicityDatabase.set('vi', { patterns, commonWords: ['và', 'của', 'là'], culturalSensitivity: 'high' });
+        this.toxicityDatabase.set('vi', { 
+            patterns, 
+            commonWords: ['và', 'của', 'là'], 
+            culturalSensitivity: 'high' 
+        });
     }
 
     initializeIndonesianPatterns() {
         const patterns = [
-            { pattern: /\b(bangsat|anjing|kontol|memek|babi)\b/gi, weight: 2 }
+            { pattern: /\b(mati|bunuh\s*diri|pergi\s*ke\s*neraka)\b/gi, weight: 6 },
+            { pattern: /\b(bangsat|anjing|kontol|memek|babi|kampret)\b/gi, weight: 2 },
+            { pattern: /\b(bodoh|tolol|goblok|idiot)\b/gi, weight: 1 }
         ];
-        this.toxicityDatabase.set('id', { patterns, commonWords: ['dan', 'yang', 'di'], culturalSensitivity: 'medium' });
+        this.toxicityDatabase.set('id', { 
+            patterns, 
+            commonWords: ['dan', 'yang', 'di'], 
+            culturalSensitivity: 'medium' 
+        });
     }
 
     async translateText(text, targetLang = 'en', sourceLang = null) {
@@ -968,7 +1200,7 @@ class SynthiaMultiTranslator {
         }));
     }
 
-    // ENHANCED: Comprehensive toxicity analysis with bypass detection
+    // ENHANCED: Pokemon-aware toxicity analysis with bypass detection
     async analyzeToxicityInLanguage(text, langCode) {
         const langData = this.toxicityDatabase.get(langCode) || this.toxicityDatabase.get('en');
         if (!langData) return { toxicityLevel: 0, matches: [], elongatedWords: [], language: 'Unknown' };
@@ -978,11 +1210,30 @@ class SynthiaMultiTranslator {
         const elongatedWords = [];
         const bypassAttempts = [];
         
-        // Step 1: Normalize bypass attempts
+        // ENHANCED: Pokemon-aware bypass detection
+        const lowerText = text.toLowerCase().trim();
+        
+        // FIRST: Check if this is legitimate Pokemon content
+        if (this.isPokemonRelatedContent(text)) {
+            console.log(`🎮 Pokemon content detected - skipping toxicity analysis: "${text.slice(0, 50)}..."`);
+            return {
+                toxicityLevel: 0,
+                matches: [],
+                elongatedWords: [],
+                bypassAttempts: [],
+                originalText: text,
+                normalizedText: text.toLowerCase(),
+                bypassDetected: false,
+                language: this.enhancedAPI.supportedLanguages.get(langCode) || 'Unknown',
+                culturalSensitivity: langData.culturalSensitivity || 'medium'
+            };
+        }
+        
+        // Step 1: Normalize bypass attempts (only for non-Pokemon content)
         const normalizedText = this.normalizeBypassAttempts(text);
         const isNormalized = normalizedText !== text.toLowerCase();
         
-        // Step 2: Detect bypass attempts
+        // Step 2: Detect bypass attempts with Pokemon context awareness
         if (isNormalized) {
             const detectedBypasses = this.detectBypassAttempts(text, normalizedText);
             bypassAttempts.push(...detectedBypasses);
@@ -1039,8 +1290,7 @@ class SynthiaMultiTranslator {
             }
         }
         
-        // Enhanced scam detection with bypass awareness
-        const lowerText = text.toLowerCase();
+        // FIXED: Enhanced scam detection with Pokemon awareness
         const normalizedLowerText = normalizedText.toLowerCase();
         let scamScore = 0;
         
@@ -1126,7 +1376,6 @@ class SynthiaMultiTranslator {
 
     // Helper method to find original pattern in text
     findOriginalPattern(originalText, normalizedMatch) {
-        // Try to find the original elongated/bypassed version
         const words = originalText.split(/\s+/);
         
         for (const word of words) {
