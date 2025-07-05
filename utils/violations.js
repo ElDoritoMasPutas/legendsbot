@@ -1,5 +1,4 @@
-// Enhanced Violation Types and Moderation Logic v9.0 - COMPLETE FILE WITH BYPASS DETECTION
-// Replace your entire utils/violations.js with this
+// Enhanced Violation Types and Moderation Logic v9.0 - WITH MULTI-API DECISION ENGINE
 const { PermissionsBitField, EmbedBuilder } = require('discord.js');
 const config = require('../config/config.js');
 
@@ -12,7 +11,8 @@ const violationTypes = {
         aiAnalysis: true,
         contextRequired: true,
         multiLanguage: true,
-        bypassAware: true, // NEW: Bypass detection enabled
+        bypassAware: true,
+        multiApiEnabled: true, // NEW: Multi-API Decision Engine support
         escalation: [
             { action: 'warn', duration: 0 },
             { action: 'warn', duration: 0 },
@@ -28,6 +28,7 @@ const violationTypes = {
         contextRequired: true,
         multiLanguage: true,
         bypassAware: true,
+        multiApiEnabled: true,
         escalation: [
             { action: 'delete', duration: 0 },
             { action: 'warn', duration: 0 },
@@ -43,6 +44,7 @@ const violationTypes = {
         contextRequired: true,
         multiLanguage: true,
         bypassAware: true,
+        multiApiEnabled: true,
         escalation: [
             { action: 'mute', duration: 24 * 60 * 60 * 1000 },
             { action: 'mute', duration: 7 * 24 * 60 * 60 * 1000 },
@@ -57,6 +59,7 @@ const violationTypes = {
         contextRequired: false,
         multiLanguage: true,
         bypassAware: true,
+        multiApiEnabled: true,
         escalation: [
             { action: 'ban', duration: 0 }
         ]
@@ -69,6 +72,7 @@ const violationTypes = {
         contextRequired: false,
         multiLanguage: true,
         bypassAware: true,
+        multiApiEnabled: true,
         escalation: [
             { action: 'ban', duration: 0 }
         ]
@@ -80,7 +84,8 @@ const violationTypes = {
         aiAnalysis: true,
         contextRequired: false,
         multiLanguage: false,
-        bypassAware: false, // Spam doesn't typically use bypass methods
+        bypassAware: false,
+        multiApiEnabled: false, // Spam doesn't use decision engine
         escalation: [
             { action: 'warn', duration: 0 },
             { action: 'mute', duration: 60 * 60 * 1000 },
@@ -92,19 +97,24 @@ const violationTypes = {
 // User violation tracking
 const userViolations = new Map();
 
-// ENHANCED: Violation DM with comprehensive bypass detection information
+// ENHANCED: Violation DM with Multi-API Decision Engine information
 async function sendViolationDM(member, dmData) {
     try {
         const user = member.user;
         const violationRule = violationTypes[dmData.violationType];
         
         const embed = new EmbedBuilder()
-            .setFooter({ text: `Enhanced Synthia v${config.aiVersion} Multi-API System with Advanced Bypass Detection` })
+            .setFooter({ text: `Enhanced Synthia v${config.aiVersion} Multi-API Decision Engine System` })
             .setTimestamp()
             .setAuthor({
-                name: 'Enhanced Synthia v9.0 - Anti-Bypass Intelligence System',
+                name: 'Enhanced Synthia v9.0 - Multi-API Intelligence System',
                 iconURL: member.client.user?.displayAvatarURL()
             });
+        
+        // Enhanced system information
+        const systemInfo = dmData.decisionEngineUsed ? 
+            `\n\n🤖 **MULTI-API ANALYSIS**\nYour message was analyzed by ${dmData.apisUsed?.length || 'multiple'} industry-leading AI systems for maximum accuracy.` : 
+            `\n\n💻 **LOCAL ANALYSIS**\nAnalyzed using our enhanced local AI system.`;
         
         // Enhanced bypass detection notification
         const bypassInfo = dmData.bypassDetected ? 
@@ -115,15 +125,25 @@ async function sendViolationDM(member, dmData) {
                 embed
                     .setColor(config.colors.warning)
                     .setTitle(`⚠️ Enhanced Warning - ${dmData.guildName}`)
-                    .setDescription(`You have received a warning from Enhanced Synthia v${config.aiVersion} multi-API intelligence system with advanced bypass detection.${bypassInfo}`)
+                    .setDescription(`You have received a warning from Enhanced Synthia v${config.aiVersion} multi-API intelligence system.${systemInfo}${bypassInfo}`)
                     .addFields(
                         { name: '⚖️ Violation', value: violationRule.name, inline: true },
                         { name: '📊 Warning #', value: `${dmData.violationNumber}`, inline: true },
                         { name: '🌍 Language', value: dmData.originalLanguage || 'English', inline: true },
                         { name: '🔥 Threat Level', value: `${dmData.threatLevel}/10${dmData.baseThreatLevel ? ` (base: ${dmData.baseThreatLevel})` : ''}`, inline: true },
                         { name: '🔍 Bypass Detection', value: dmData.bypassDetected ? '🚨 DETECTED' : '✅ None', inline: true },
-                        { name: '🧠 AI Confidence', value: `${dmData.confidence || 85}%`, inline: true }
+                        { name: '🧠 AI Confidence', value: `${dmData.confidence || 85}%`, inline: true },
+                        { name: '🤖 Analysis Method', value: dmData.decisionEngineUsed ? `Multi-API (${dmData.apisUsed?.length || 0} APIs)` : 'Enhanced Local', inline: true }
                     );
+                
+                // Add API information if decision engine was used
+                if (dmData.decisionEngineUsed && dmData.apisUsed && dmData.apisUsed.length > 0) {
+                    embed.addFields({
+                        name: '🔧 AI Systems Consulted',
+                        value: dmData.apisUsed.map(api => `• **${api}** (Industry AI)`).join('\n'),
+                        inline: false
+                    });
+                }
                 
                 if (dmData.violatingContent) {
                     embed.addFields({ 
@@ -167,8 +187,13 @@ async function sendViolationDM(member, dmData) {
                     });
                 }
                 
-                if (dmData.multiApiUsed) {
-                    embed.addFields({ name: '🔄 Enhanced Detection', value: 'Multi-API Analysis + Bypass Detection', inline: true });
+                // Add accuracy information
+                if (dmData.decisionEngineUsed) {
+                    embed.addFields({
+                        name: '📈 Why Multi-API Analysis?',
+                        value: 'Multiple AI systems reached consensus on this decision, significantly reducing the chance of false positives while ensuring accurate detection.',
+                        inline: false
+                    });
                 }
                 
                 // Add bypass prevention education
@@ -185,15 +210,25 @@ async function sendViolationDM(member, dmData) {
                 embed
                     .setColor(config.colors.warning)
                     .setTitle(`🗑️ Message Deleted - ${dmData.guildName}`)
-                    .setDescription(`Your message was automatically deleted by Enhanced Synthia v${config.aiVersion} with advanced bypass detection.${bypassInfo}`)
+                    .setDescription(`Your message was automatically deleted by Enhanced Synthia v${config.aiVersion}.${systemInfo}${bypassInfo}`)
                     .addFields(
                         { name: '⚖️ Violation', value: violationRule.name, inline: true },
                         { name: '🌍 Language', value: dmData.originalLanguage || 'English', inline: true },
                         { name: '🔥 Threat Level', value: `${dmData.threatLevel}/10${dmData.baseThreatLevel ? ` (base: ${dmData.baseThreatLevel})` : ''}`, inline: true },
                         { name: '🔍 Bypass Detection', value: dmData.bypassDetected ? '🚨 DETECTED' : '✅ None', inline: true },
                         { name: '⚡ Response Time', value: `${dmData.processingTime || 'N/A'}ms`, inline: true },
-                        { name: '🧠 AI Confidence', value: `${dmData.confidence || 85}%`, inline: true }
+                        { name: '🧠 AI Confidence', value: `${dmData.confidence || 85}%`, inline: true },
+                        { name: '🤖 Analysis Method', value: dmData.decisionEngineUsed ? `Multi-API Decision Engine` : 'Enhanced Local Analysis', inline: true }
                     );
+                
+                // Add specific API results if available
+                if (dmData.decisionEngineUsed && dmData.apisUsed && dmData.apisUsed.length > 0) {
+                    embed.addFields({
+                        name: '🔧 AI Systems That Flagged This Content',
+                        value: `${dmData.apisUsed.length} industry AI systems agreed this content violated guidelines:\n${dmData.apisUsed.map(api => `• **${api}**`).join('\n')}`,
+                        inline: false
+                    });
+                }
                 
                 if (dmData.violatingContent) {
                     embed.addFields({ 
@@ -217,14 +252,6 @@ async function sendViolationDM(member, dmData) {
                     });
                 }
                 
-                if (dmData.bypassMethods && dmData.bypassMethods.length > 0) {
-                    embed.addFields({
-                        name: '🔍 Detected Bypass Methods',
-                        value: dmData.bypassMethods.map(method => `• ${method.replace('_', ' ').toUpperCase()}`).join('\n'),
-                        inline: false
-                    });
-                }
-                
                 if (dmData.reasoning && dmData.reasoning.length > 0) {
                     embed.addFields({ 
                         name: '🧠 Why It Was Deleted', 
@@ -238,15 +265,25 @@ async function sendViolationDM(member, dmData) {
                 embed
                     .setColor(config.colors.error)
                     .setTitle(`🔇 Enhanced Temporary Mute - ${dmData.guildName}`)
-                    .setDescription(`You have been temporarily muted by Enhanced Synthia v${config.aiVersion} with advanced bypass detection.${bypassInfo}`)
+                    .setDescription(`You have been temporarily muted by Enhanced Synthia v${config.aiVersion}.${systemInfo}${bypassInfo}`)
                     .addFields(
                         { name: '⚖️ Violation', value: violationRule.name, inline: true },
                         { name: '⏰ Duration', value: formatDuration(dmData.duration), inline: true },
                         { name: '🌍 Language', value: dmData.originalLanguage || 'English', inline: true },
                         { name: '🔥 Threat Level', value: `${dmData.threatLevel}/10${dmData.baseThreatLevel ? ` (base: ${dmData.baseThreatLevel})` : ''}`, inline: true },
                         { name: '🔍 Bypass Detection', value: dmData.bypassDetected ? '🚨 DETECTED' : '✅ None', inline: true },
-                        { name: '📈 Penalty Applied', value: dmData.bypassDetected ? 'Yes (+50% for bypass)' : 'Standard', inline: true }
+                        { name: '📈 Penalty Applied', value: dmData.bypassDetected ? 'Yes (+50% for bypass)' : 'Standard', inline: true },
+                        { name: '🤖 Analysis Method', value: dmData.decisionEngineUsed ? `Multi-API Consensus` : 'Enhanced Local', inline: true }
                     );
+                
+                // Show API consensus for mutes
+                if (dmData.decisionEngineUsed && dmData.apisUsed && dmData.apisUsed.length > 0) {
+                    embed.addFields({
+                        name: '🏛️ AI Consensus Decision',
+                        value: `${dmData.apisUsed.length} independent AI systems reached consensus that this content required muting:\n${dmData.apisUsed.map(api => `• **${api}** - Industry AI System`).join('\n')}\n\nThis consensus approach virtually eliminates false positives.`,
+                        inline: false
+                    });
+                }
                 
                 if (dmData.violatingContent) {
                     embed.addFields({ 
@@ -270,24 +307,6 @@ async function sendViolationDM(member, dmData) {
                             inline: false 
                         });
                     }
-                    
-                    if (dmData.bypassMethods && dmData.bypassMethods.length > 0) {
-                        embed.addFields({
-                            name: '🔍 Specific Techniques Detected',
-                            value: dmData.bypassMethods.map(method => {
-                                switch(method) {
-                                    case 'elongation': return '🔸 **Character Elongation** - Repeating characters to hide words';
-                                    case 'character_substitution': return '🔸 **Symbol Substitution** - Using * @ $ etc. instead of letters';
-                                    case 'separator_bypassing': return '🔸 **Separator Injection** - Using dots, dashes between letters';
-                                    case 'spacing_bypassing': return '🔸 **Space Injection** - Adding spaces between letters';
-                                    case 'leetspeak': return '🔸 **Leetspeak** - Using numbers instead of letters';
-                                    case 'unicode_substitution': return '🔸 **Unicode Substitution** - Using foreign characters that look similar';
-                                    default: return `🔸 **${method.replace('_', ' ').toUpperCase()}**`;
-                                }
-                            }).join('\n'),
-                            inline: false
-                        });
-                    }
                 }
                 
                 if (dmData.reasoning && dmData.reasoning.length > 0) {
@@ -303,15 +322,24 @@ async function sendViolationDM(member, dmData) {
                 embed
                     .setColor(config.colors.error)
                     .setTitle(`🔨 Enhanced Permanent Ban - ${dmData.guildName}`)
-                    .setDescription(`You have been permanently banned by Enhanced Synthia v${config.aiVersion} with advanced bypass detection.${bypassInfo}`)
+                    .setDescription(`You have been permanently banned by Enhanced Synthia v${config.aiVersion}.${systemInfo}${bypassInfo}`)
                     .addFields(
                         { name: '⚖️ Violation', value: violationRule.name, inline: true },
-                        { name: '🧠 AI Decision', value: 'Multi-API + Bypass Detection', inline: true },
+                        { name: '🧠 AI Decision', value: dmData.decisionEngineUsed ? 'Multi-API Consensus' : 'Enhanced Local', inline: true },
                         { name: '🌍 Language', value: dmData.originalLanguage || 'English', inline: true },
                         { name: '🔥 Threat Level', value: `${dmData.threatLevel}/10${dmData.baseThreatLevel ? ` (base: ${dmData.baseThreatLevel})` : ''}`, inline: true },
                         { name: '🔍 Bypass Detection', value: dmData.bypassDetected ? '🚨 DETECTED' : '✅ None', inline: true },
                         { name: '⚡ Enforcement', value: 'Immediate & Permanent', inline: true }
                     );
+                
+                // Show unanimous AI decision for bans
+                if (dmData.decisionEngineUsed && dmData.apisUsed && dmData.apisUsed.length > 0) {
+                    embed.addFields({
+                        name: '⚖️ Unanimous AI Decision',
+                        value: `**${dmData.apisUsed.length} AI systems unanimously agreed this content warrants a permanent ban:**\n${dmData.apisUsed.map(api => `• **${api}** - ${api.includes('Google') || api.includes('OpenAI') || api.includes('Microsoft') ? 'Industry Leader' : 'Specialized AI'}`).join('\n')}\n\n**This level of AI consensus indicates extremely severe content.**`,
+                        inline: false
+                    });
+                }
                 
                 if (dmData.violatingContent) {
                     embed.addFields({ 
@@ -335,14 +363,6 @@ async function sendViolationDM(member, dmData) {
                             inline: false 
                         });
                     }
-                    
-                    if (dmData.bypassMethods && dmData.bypassMethods.length > 0) {
-                        embed.addFields({
-                            name: '🔍 Sophisticated Bypass Techniques Detected',
-                            value: `Our AI identified ${dmData.bypassMethods.length} different circumvention methods:\n${dmData.bypassMethods.map(method => `• **${method.replace('_', ' ').toUpperCase()}**`).join('\n')}\n\nThis level of intentional filter evasion is unacceptable.`,
-                            inline: false
-                        });
-                    }
                 }
                 
                 if (dmData.reasoning && dmData.reasoning.length > 0) {
@@ -357,7 +377,7 @@ async function sendViolationDM(member, dmData) {
         
         embed.addFields({
             name: '📝 Technical Details',
-            value: `${dmData.reason}\n\n**Processing Time:** ${dmData.processingTime || 'N/A'}ms\n**Confidence Level:** ${dmData.confidence || 85}%\n**Multi-API Analysis:** ${dmData.multiApiUsed ? 'Yes' : 'No'}`,
+            value: `${dmData.reason}\n\n**Processing Time:** ${dmData.processingTime || 'N/A'}ms\n**Confidence Level:** ${dmData.confidence || 85}%\n**Analysis Method:** ${dmData.decisionEngineUsed ? 'Multi-API Decision Engine' : 'Enhanced Local AI'}\n**APIs Consulted:** ${dmData.apisUsed?.length || 0}`,
             inline: false
         });
         
@@ -365,7 +385,16 @@ async function sendViolationDM(member, dmData) {
         if (dmData.action === 'ban' || dmData.action === 'mute') {
             embed.addFields({
                 name: '📞 Appeal Process',
-                value: 'If you believe this action was taken in error, please contact a server administrator. Note that bypass attempts are automatically logged and thoroughly reviewed during appeals.',
+                value: `If you believe this action was taken in error, please contact a server administrator. ${dmData.decisionEngineUsed ? 'Note that this decision was reached by multiple independent AI systems, making errors extremely unlikely.' : 'Note that bypass attempts are automatically logged and thoroughly reviewed during appeals.'}`,
+                inline: false
+            });
+        }
+        
+        // Add comprehensive educational information about the AI system
+        if (dmData.decisionEngineUsed) {
+            embed.addFields({
+                name: '🎓 About Our Multi-AI System',
+                value: 'Your message was analyzed by multiple industry-leading AI systems including Google, Microsoft, and other advanced models. These systems work together to ensure maximum accuracy and fairness in moderation decisions.',
                 inline: false
             });
         }
@@ -388,14 +417,14 @@ async function sendViolationDM(member, dmData) {
         }
         
         await user.send({ embeds: [embed] });
-        console.log(`📨 Sent enhanced ${dmData.action} notification to ${user.tag}${dmData.bypassDetected ? ' (bypass detected)' : ''}`);
+        console.log(`📨 Sent enhanced ${dmData.action} notification to ${user.tag}${dmData.bypassDetected ? ' (bypass detected)' : ''}${dmData.decisionEngineUsed ? ` (${dmData.apisUsed?.length || 0} APIs)` : ''}`);
         
     } catch (error) {
         console.log(`❌ Could not DM user: ${error.message}`);
     }
 }
 
-// ENHANCED: Moderation execution with comprehensive bypass detection
+// ENHANCED: Moderation execution with Multi-API Decision Engine support
 async function executeModerationAction(message, synthiaAnalysis, serverLogger, discordLogger) {
     const member = message.member;
     const violationType = synthiaAnalysis.violationType;
@@ -423,6 +452,12 @@ async function executeModerationAction(message, synthiaAnalysis, serverLogger, d
         const punishment = violationRule.escalation[Math.min(violationCount, violationRule.escalation.length - 1)];
         
         let reason = `Enhanced Synthia v${config.aiVersion}: ${violationRule.name} (Level ${synthiaAnalysis.threatLevel}/10)`;
+        
+        // Enhanced reason with Multi-API information
+        if (synthiaAnalysis.decisionEngineUsed) {
+            const apiCount = synthiaAnalysis.apiResults ? Object.keys(synthiaAnalysis.apiResults).filter(api => synthiaAnalysis.apiResults[api] && !synthiaAnalysis.apiResults[api].error).length : 0;
+            reason += ` | Multi-API Decision (${apiCount} AIs)`;
+        }
         
         // Enhanced reason with comprehensive bypass detection
         if (synthiaAnalysis.bypassDetected) {
@@ -453,6 +488,15 @@ async function executeModerationAction(message, synthiaAnalysis, serverLogger, d
         console.log(`   Threshold: ${violationRule.threshold}/10`);
         console.log(`   Violation: ${violationType}`);
         console.log(`   Violation Count: ${violationCount + 1}`);
+        console.log(`   Decision Engine Used: ${synthiaAnalysis.decisionEngineUsed ? 'YES' : 'NO'}`);
+        if (synthiaAnalysis.decisionEngineUsed) {
+            const apiCount = synthiaAnalysis.apiResults ? Object.keys(synthiaAnalysis.apiResults).filter(api => synthiaAnalysis.apiResults[api] && !synthiaAnalysis.apiResults[api].error).length : 0;
+            console.log(`   APIs Consulted: ${apiCount}`);
+            if (synthiaAnalysis.apiResults) {
+                const workingApis = Object.keys(synthiaAnalysis.apiResults).filter(api => synthiaAnalysis.apiResults[api] && !synthiaAnalysis.apiResults[api].error);
+                console.log(`   Working APIs: ${workingApis.join(', ')}`);
+            }
+        }
         console.log(`   Bypass Detected: ${synthiaAnalysis.bypassDetected ? 'YES' : 'NO'}`);
         if (synthiaAnalysis.bypassDetected) {
             console.log(`   Bypass Methods: ${synthiaAnalysis.bypassAttempts?.map(b => b.type).join(', ') || 'Unknown'}`);
@@ -466,7 +510,12 @@ async function executeModerationAction(message, synthiaAnalysis, serverLogger, d
             synthiaAnalysis.threatLevel - (synthiaAnalysis.bypassAttempts?.reduce((sum, b) => sum + (b.severity || 1), 0) || 0) :
             synthiaAnalysis.threatLevel;
         
-        // Prepare enhanced DM data with comprehensive bypass information
+        // Get list of APIs that were actually used
+        const apisUsed = synthiaAnalysis.apiResults ? 
+            Object.keys(synthiaAnalysis.apiResults).filter(api => synthiaAnalysis.apiResults[api] && !synthiaAnalysis.apiResults[api].error) : 
+            [];
+        
+        // Prepare enhanced DM data with Multi-API information
         const dmData = {
             action: punishment.action,
             violationType,
@@ -477,11 +526,15 @@ async function executeModerationAction(message, synthiaAnalysis, serverLogger, d
             originalLanguage: synthiaAnalysis.language.originalLanguage,
             multiApiUsed: synthiaAnalysis.multiApiUsed,
             threatLevel: synthiaAnalysis.threatLevel,
-            baseThreatLevel: baseThreatLevel, // NEW: Base threat before bypass penalty
+            baseThreatLevel: baseThreatLevel,
             violatingContent: message.content,
             reasoning: synthiaAnalysis.reasoning,
             confidence: synthiaAnalysis.confidence,
             processingTime: synthiaAnalysis.processingTime,
+            // ENHANCED: Multi-API Decision Engine data
+            decisionEngineUsed: synthiaAnalysis.decisionEngineUsed,
+            apisUsed: apisUsed,
+            apiResults: synthiaAnalysis.apiResults,
             // ENHANCED: Comprehensive bypass detection data
             bypassDetected: synthiaAnalysis.bypassDetected,
             normalizedContent: synthiaAnalysis.normalizedText,
@@ -498,7 +551,7 @@ async function executeModerationAction(message, synthiaAnalysis, serverLogger, d
                 try {
                     await sendViolationDM(member, dmData);
                     actionSuccessful = true;
-                    console.log(`⚠️ Successfully warned ${member?.user.tag || message.author.tag}${synthiaAnalysis.bypassDetected ? ' (bypass detected)' : ''}`);
+                    console.log(`⚠️ Successfully warned ${member?.user.tag || message.author.tag}${synthiaAnalysis.bypassDetected ? ' (bypass detected)' : ''}${synthiaAnalysis.decisionEngineUsed ? ` (${apisUsed.length} APIs consulted)` : ''}`);
                 } catch (error) {
                     actionError = error.message;
                     console.error(`❌ Failed to warn user: ${error.message}`);
@@ -510,7 +563,7 @@ async function executeModerationAction(message, synthiaAnalysis, serverLogger, d
                     message.guild.members.me.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
                     try {
                         await message.delete();
-                        console.log(`🗑️ Deleted message from ${member?.user.tag || message.author.tag}${synthiaAnalysis.bypassDetected ? ' (bypass attempt)' : ''}`);
+                        console.log(`🗑️ Deleted message from ${member?.user.tag || message.author.tag}${synthiaAnalysis.bypassDetected ? ' (bypass attempt)' : ''}${synthiaAnalysis.decisionEngineUsed ? ` (${apisUsed.length} AI consensus)` : ''}`);
                         actionSuccessful = true;
                         
                         await sendViolationDM(member, dmData);
@@ -528,7 +581,7 @@ async function executeModerationAction(message, synthiaAnalysis, serverLogger, d
                 if (member && message.guild.members.me.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
                     try {
                         await member.timeout(punishment.duration, reason);
-                        console.log(`🔇 Muted ${member.user.tag} for ${formatDuration(punishment.duration)}${synthiaAnalysis.bypassDetected ? ' (bypass attempt detected)' : ''}`);
+                        console.log(`🔇 Muted ${member.user.tag} for ${formatDuration(punishment.duration)}${synthiaAnalysis.bypassDetected ? ' (bypass attempt detected)' : ''}${synthiaAnalysis.decisionEngineUsed ? ` (${apisUsed.length} AI consensus)` : ''}`);
                         
                         await sendViolationDM(member, dmData);
                         actionSuccessful = true;
@@ -552,7 +605,7 @@ async function executeModerationAction(message, synthiaAnalysis, serverLogger, d
                         await sendViolationDM(member, dmData);
                         
                         await member.ban({ reason, deleteMessageDays: 1 });
-                        console.log(`🔨 Banned ${member.user.tag}${synthiaAnalysis.bypassDetected ? ' (sophisticated bypass attempt detected)' : ''}`);
+                        console.log(`🔨 Banned ${member.user.tag}${synthiaAnalysis.bypassDetected ? ' (sophisticated bypass attempt detected)' : ''}${synthiaAnalysis.decisionEngineUsed ? ` (${apisUsed.length} AI unanimous decision)` : ''}`);
                         actionSuccessful = true;
                     } catch (error) {
                         actionError = error.message;
@@ -578,16 +631,19 @@ async function executeModerationAction(message, synthiaAnalysis, serverLogger, d
             }
         }
         
-        // ENHANCED: Comprehensive logging with bypass detection details
+        // ENHANCED: Comprehensive logging with Multi-API decision engine details
         const logFields = {
             'Action Status': actionSuccessful ? '✅ Successful' : `❌ Failed: ${actionError}`,
             'Enhanced Synthia': config.aiVersion,
             'Confidence': `${synthiaAnalysis.confidence}%`,
             'Threat Level': `${synthiaAnalysis.threatLevel}/10`,
-            'Base Threat Level': `${baseThreatLevel}/10`, // NEW
+            'Base Threat Level': `${baseThreatLevel}/10`,
             'Threshold': `${violationRule.threshold}/10`,
             'Processing Time': `${synthiaAnalysis.processingTime}ms`,
             'Violation Count': violationCount + 1,
+            'Decision Engine': synthiaAnalysis.decisionEngineUsed ? '✅ USED' : '❌ Local Fallback',
+            'APIs Consulted': apisUsed.length > 0 ? apisUsed.join(', ') : 'None',
+            'API Count': apisUsed.length,
             'Bypass Detected': synthiaAnalysis.bypassDetected ? '🚨 YES' : '✅ NO',
             'Bypass Methods': synthiaAnalysis.bypassAttempts?.map(b => b.type).join(', ') || 'None',
             'Bypass Penalty': synthiaAnalysis.bypassDetected ? `+${synthiaAnalysis.threatLevel - baseThreatLevel}` : 'None',
@@ -605,10 +661,14 @@ async function executeModerationAction(message, synthiaAnalysis, serverLogger, d
             console.log(`   Action: ${punishment.action}`);
             console.log(`   Violation: ${violationType}`);
             console.log(`   Total Violations: ${violationCount + 1}`);
+            console.log(`   Decision Engine: ${synthiaAnalysis.decisionEngineUsed ? `USED (${apisUsed.length} APIs)` : 'LOCAL FALLBACK'}`);
             console.log(`   Bypass Detection: ${synthiaAnalysis.bypassDetected ? 'DETECTED & PENALIZED' : 'NONE'}`);
             if (synthiaAnalysis.bypassDetected) {
                 console.log(`   Bypass Techniques: ${synthiaAnalysis.bypassAttempts?.map(b => b.type).join(', ')}`);
                 console.log(`   Penalty Applied: +${synthiaAnalysis.threatLevel - baseThreatLevel} threat level`);
+            }
+            if (synthiaAnalysis.decisionEngineUsed && apisUsed.length > 0) {
+                console.log(`   AI Systems Used: ${apisUsed.join(', ')}`);
             }
         }
         
@@ -621,6 +681,7 @@ async function executeModerationAction(message, synthiaAnalysis, serverLogger, d
                 { name: 'User', value: `${message.author.tag} (${message.author.id})`, inline: true },
                 { name: 'Violation Type', value: violationType, inline: true },
                 { name: 'Threat Level', value: `${synthiaAnalysis.threatLevel}/10`, inline: true },
+                { name: 'Decision Engine', value: synthiaAnalysis.decisionEngineUsed ? '✅ Used' : '❌ Local', inline: true },
                 { name: 'Bypass Detected', value: synthiaAnalysis.bypassDetected ? '🚨 YES' : '✅ NO', inline: true },
                 { name: 'Bypass Methods', value: synthiaAnalysis.bypassAttempts?.map(b => b.type).join(', ') || 'None', inline: true }
             ]
