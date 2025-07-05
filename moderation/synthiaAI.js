@@ -1,6 +1,7 @@
-// Enhanced Synthia AI Brain v9.0 - COMPLETE FIXED FILE
+// Enhanced Synthia AI Brain v9.0 - WITH MULTI-API DECISION ENGINE INTEGRATION
 const fs = require('fs').promises;
 const config = require('../config/config.js');
+const MultiAPIDecisionEngine = require('../decisions/decisions.js');
 
 class EnhancedSynthiaAI {
     constructor(synthiaTranslator, discordLogger) {
@@ -8,6 +9,10 @@ class EnhancedSynthiaAI {
         this.discordLogger = discordLogger;
         this.profiles = new Map();
         this.dataPath = 'data/enhanced_profiles.json';
+        
+        // Initialize Multi-API Decision Engine
+        this.decisionEngine = new MultiAPIDecisionEngine();
+        
         this.loadData();
     }
 
@@ -17,9 +22,9 @@ class EnhancedSynthiaAI {
             const data = await fs.readFile(this.dataPath, 'utf8');
             const parsed = JSON.parse(data);
             this.profiles = new Map(parsed.profiles || []);
-            console.log(`✅ Loaded ${this.profiles.size} enhanced profiles with Pokemon-aware bypass detection`);
+            console.log(`✅ Loaded ${this.profiles.size} enhanced profiles with Multi-API decision engine`);
         } catch (error) {
-            console.log('📁 Creating fresh enhanced profiles with Pokemon-aware bypass detection...');
+            console.log('📁 Creating fresh enhanced profiles with Multi-API decision engine...');
             await this.saveData();
         }
     }
@@ -33,7 +38,8 @@ class EnhancedSynthiaAI {
                 multiApiEnabled: true,
                 enhancedModeration: true,
                 bypassDetectionEnabled: true,
-                pokemonAware: true
+                pokemonAware: true,
+                multiApiDecisionEngine: true
             };
             
             await fs.writeFile(this.dataPath, JSON.stringify(data, null, 2));
@@ -42,7 +48,7 @@ class EnhancedSynthiaAI {
         }
     }
 
-    // COMPREHENSIVE: Pokemon content detection - FIXED FOR .me AND .mysteryegg
+    // COMPREHENSIVE: Pokemon content detection - UNCHANGED
     isPokemonRelatedContent(text) {
         const lowerContent = text.toLowerCase().trim();
         
@@ -105,7 +111,7 @@ class EnhancedSynthiaAI {
         ];
         const competitiveTermCount = competitiveTerms.filter(term => lowerContent.includes(term)).length;
         
-        // COMPREHENSIVE: Multiple detection criteria - FIXED TO INCLUDE .me AND .mysteryegg
+        // COMPREHENSIVE: Multiple detection criteria
         return (
             pokemonTermCount >= 2 || // Has Pokemon stats/terms
             (lowerContent.includes('.trade') && pokemonTermCount >= 1) || // .trade with Pokemon terms
@@ -120,7 +126,7 @@ class EnhancedSynthiaAI {
         );
     }
 
-    // ENHANCED: Complete analysis with comprehensive Pokemon-aware bypass detection
+    // ENHANCED: Complete analysis with Multi-API Decision Engine
     async analyzeMessage(content, author, channel, message) {
         const startTime = Date.now();
         
@@ -144,7 +150,9 @@ class EnhancedSynthiaAI {
             normalizedText: null,
             toxicityScore: 0,
             processingTime: 0,
-            multiApiUsed: false
+            multiApiUsed: false,
+            decisionEngineUsed: false,
+            apiResults: null
         };
 
         try {
@@ -163,11 +171,10 @@ class EnhancedSynthiaAI {
                 return analysis;
             }
 
-            // COMPREHENSIVE: Pokemon content detection - FIRST PRIORITY
+            // FIRST PRIORITY: Pokemon content detection
             if (this.isPokemonRelatedContent(content)) {
                 console.log(`🎮 POKEMON CONTENT DETECTED - skipping all analysis: "${content.slice(0, 50)}..."`);
                 
-                // Determine specific reason
                 let reason = 'Pokemon content detected - whitelisted';
                 if (/\.(pk[3-9]|pb[78]|pa[78]|pkm|3gpkm|ck3|bk4|rk4|sk2|xk3)(\s|$)/i.test(content)) {
                     reason = 'Pokemon file detected - whitelisted';
@@ -206,152 +213,110 @@ class EnhancedSynthiaAI {
                     console.log(`🌍 Analyzing translated text: "${translation.translatedText}"`);
                 }
             }
+
+            // **NEW: Multi-API Decision Engine Analysis**
+            console.log(`🤖 Using Multi-API Decision Engine for enhanced analysis...`);
             
-            // ENHANCED: Comprehensive toxicity analysis with Pokemon-aware bypass detection
-            let toxicityAnalysis;
-            
-            if (detectedLang !== 'en' && analysis.language.translated) {
-                // For non-English: analyze original text in original language
-                toxicityAnalysis = await this.synthiaTranslator.analyzeToxicityInLanguage(content, detectedLang);
+            try {
+                // Prepare context for decision engine
+                const decisionContext = {
+                    author: {
+                        id: author.id,
+                        tag: author.tag
+                    },
+                    channel: {
+                        id: channel.id,
+                        name: channel.name
+                    },
+                    guild: message.guild ? {
+                        id: message.guild.id,
+                        name: message.guild.name
+                    } : null,
+                    language: detectedLang,
+                    translatedText: analysis.language.translated
+                };
+
+                // Use decision engine for analysis
+                const decisionResult = await this.decisionEngine.analyzeWithMultiAPI(content, decisionContext);
                 
-                // If no toxicity found in original, also check translated text
-                if (toxicityAnalysis.toxicityLevel === 0) {
-                    const englishAnalysis = await this.synthiaTranslator.analyzeToxicityInLanguage(analysis.language.translated, 'en');
-                    if (englishAnalysis.toxicityLevel > toxicityAnalysis.toxicityLevel) {
-                        toxicityAnalysis = englishAnalysis;
+                analysis.decisionEngineUsed = true;
+                analysis.apiResults = decisionResult.apiResults;
+                analysis.toxicityScore = decisionResult.toxicityScore;
+                analysis.threatLevel = decisionResult.toxicityScore;
+                analysis.confidence = decisionResult.confidence;
+                analysis.reasoning.push(...decisionResult.reasoning);
+                
+                console.log(`🧠 Multi-API Decision Result: ${decisionResult.toxicityScore}/10 (${decisionResult.confidence}% confidence)`);
+                console.log(`🔧 APIs used: ${Object.keys(decisionResult.individualScores || {}).join(', ')}`);
+                
+            } catch (decisionError) {
+                console.log(`⚠️ Decision engine failed, falling back to local analysis: ${decisionError.message}`);
+                
+                // Fallback to existing toxicity analysis
+                let toxicityAnalysis;
+                
+                if (detectedLang !== 'en' && analysis.language.translated) {
+                    toxicityAnalysis = await this.synthiaTranslator.analyzeToxicityInLanguage(content, detectedLang);
+                    
+                    if (toxicityAnalysis.toxicityLevel === 0) {
+                        const englishAnalysis = await this.synthiaTranslator.analyzeToxicityInLanguage(analysis.language.translated, 'en');
+                        if (englishAnalysis.toxicityLevel > toxicityAnalysis.toxicityLevel) {
+                            toxicityAnalysis = englishAnalysis;
+                        }
                     }
+                } else {
+                    toxicityAnalysis = await this.synthiaTranslator.analyzeToxicityInLanguage(content, detectedLang);
                 }
-            } else {
-                // For English or when no translation: analyze in detected language
-                toxicityAnalysis = await this.synthiaTranslator.analyzeToxicityInLanguage(content, detectedLang);
+                
+                analysis.threatLevel = toxicityAnalysis.toxicityLevel;
+                analysis.toxicityScore = toxicityAnalysis.toxicityLevel;
+                analysis.reasoning.push(`Fallback analysis: Level ${toxicityAnalysis.toxicityLevel}/10`);
             }
             
-            // ENHANCED: Extract bypass detection information
-            analysis.threatLevel = toxicityAnalysis.toxicityLevel;
-            analysis.toxicityScore = toxicityAnalysis.toxicityLevel;
-            analysis.elongatedWords = toxicityAnalysis.elongatedWords || [];
-            analysis.bypassAttempts = toxicityAnalysis.bypassAttempts || [];
-            analysis.bypassDetected = toxicityAnalysis.bypassDetected || false;
-            analysis.normalizedText = toxicityAnalysis.normalizedText || null;
-            
-            // Enhanced reasoning with bypass information
-            if (toxicityAnalysis.toxicityLevel > 0) {
-                analysis.reasoning.push(`Toxicity detected: Level ${toxicityAnalysis.toxicityLevel}/10`);
-                
-                if (toxicityAnalysis.matches && toxicityAnalysis.matches.length > 0) {
-                    analysis.reasoning.push(`Toxic patterns: ${toxicityAnalysis.matches.slice(0, 3).join(', ')}`);
-                }
-                
-                // Enhanced bypass reasoning
-                if (analysis.bypassDetected) {
-                    analysis.reasoning.push(`BYPASS ATTEMPT DETECTED: User attempted to circumvent filters`);
-                    
-                    if (analysis.bypassAttempts.length > 0) {
-                        const bypassTypes = analysis.bypassAttempts.map(b => b.type).join(', ');
-                        analysis.reasoning.push(`Bypass methods: ${bypassTypes}`);
-                    }
-                    
-                    if (toxicityAnalysis.originalText && toxicityAnalysis.normalizedText) {
-                        analysis.reasoning.push(`Original: "${toxicityAnalysis.originalText}" → Normalized: "${toxicityAnalysis.normalizedText}"`);
-                    }
-                }
-            }
-            
+            // ENHANCED: Extract bypass detection information (still from local system)
+            const bypassAnalysis = await this.analyzeBypassAttempts(content);
+            analysis.elongatedWords = bypassAnalysis.elongatedWords || [];
+            analysis.bypassAttempts = bypassAnalysis.bypassAttempts || [];
+            analysis.bypassDetected = bypassAnalysis.bypassDetected || false;
+            analysis.normalizedText = bypassAnalysis.normalizedText || null;
+
             // Get user profile for context
             const profile = this.getBehavioralProfile(author.id);
             profile.messageCount++;
             
-            // FIXED: Enhanced decision logic with proper bypass penalty application
+            // ENHANCED: Decision logic with Multi-API results and bypass penalties
             let baseThreatLevel = analysis.threatLevel;
-            let actualContentDetected = baseThreatLevel > 0; // Check if any actual harmful content was found
+            let actualContentDetected = baseThreatLevel > 0;
             
-            // CRITICAL FIX: Only apply bypass penalties when harmful content is actually detected
+            // Apply bypass penalties only when harmful content is detected
             if (analysis.bypassDetected && analysis.bypassAttempts.length > 0) {
                 if (actualContentDetected) {
-                    // PENALTY: Harmful content + bypass attempts = serious violation
                     const bypassPenalty = analysis.bypassAttempts.reduce((sum, attempt) => sum + (attempt.severity || 1), 0);
                     analysis.threatLevel += bypassPenalty;
-                    analysis.reasoning.push(`Bypass penalty applied to harmful content: +${bypassPenalty} (${analysis.bypassAttempts.length} techniques)`);
+                    analysis.reasoning.push(`Bypass penalty applied: +${bypassPenalty} (${analysis.bypassAttempts.length} techniques)`);
                     
                     console.log(`🚨 HARMFUL CONTENT + BYPASS DETECTED: ${baseThreatLevel} → ${analysis.threatLevel} (+${bypassPenalty})`);
                 } else {
-                    // NO PENALTY: Bypass patterns without harmful content = normal conversation
-                    // Examples: "helloooo!!!", "wooooow", "yesssss" should not be penalized
                     analysis.reasoning.push(`Bypass patterns detected but no harmful content - no penalty applied`);
-                    
                     console.log(`✅ BYPASS PATTERNS IN NORMAL CONVERSATION: "${content}" - NO PENALTY APPLIED`);
                 }
             }
             
             // Enhanced scam detection with Pokemon awareness
             let isScam = false;
-            const scamIndicators = [
-                'free nitro', 'discord gift', 'free robux', 'click here free',
-                'dm me for', 'guaranteed money', 'crypto scam', 'easy money'
-            ];
-            
-            // Check both original and normalized text for scams
-            const textToCheckForScams = analysis.bypassDetected ? 
-                [lowerContent, analysis.normalizedText?.toLowerCase() || lowerContent] : 
-                [lowerContent];
-                
-            for (const textVariant of textToCheckForScams) {
-                for (const indicator of scamIndicators) {
-                    if (textVariant.includes(indicator)) {
-                        analysis.threatLevel += 6;
-                        analysis.reasoning.push(`Scam indicator: ${indicator}`);
-                        if (textVariant !== lowerContent) {
-                            analysis.reasoning.push(`Scam detected after bypass normalization`);
-                        }
-                        isScam = true;
-                        actualContentDetected = true; // Scam counts as harmful content
-                        break;
-                    }
-                }
-                if (isScam) break;
+            const scamResult = this.detectScamContent(content, analysis.normalizedText);
+            if (scamResult.isScam) {
+                analysis.threatLevel += scamResult.severity;
+                analysis.reasoning.push(...scamResult.reasons);
+                isScam = true;
+                actualContentDetected = true;
             }
             
-            // FIXED: Enhanced .trade/.me/.mysteryegg scam detection with comprehensive Pokemon protection
-            if (lowerContent.includes('.trade') || lowerContent.includes('.me') || lowerContent.includes('.mysteryegg') || 
-                (analysis.normalizedText && (analysis.normalizedText.toLowerCase().includes('.trade') || 
-                analysis.normalizedText.toLowerCase().includes('.me') || analysis.normalizedText.toLowerCase().includes('.mysteryegg')))) {
-                
-                // Only flag if it has suspicious context AND is definitely not Pokemon trading
-                const suspiciousContext = ['free', 'click', 'guaranteed', 'nitro', 'gift', 'scam', 'money'];
-                const hasSuspiciousContext = suspiciousContext.some(word => 
-                    lowerContent.includes(word) || 
-                    (analysis.normalizedText && analysis.normalizedText.toLowerCase().includes(word))
-                );
-                
-                // Double-check: is this really Pokemon trading?
-                const isPokemonTrading = this.isPokemonRelatedContent(content);
-                
-                if (hasSuspiciousContext && !isPokemonTrading) {
-                    analysis.threatLevel += 5;
-                    const commandType = lowerContent.includes('.trade') ? '.trade' : 
-                                       lowerContent.includes('.me') ? '.me' : '.mysteryegg';
-                    analysis.reasoning.push(`Suspicious ${commandType} context detected${analysis.bypassDetected ? ' (after bypass normalization)' : ''}`);
-                    isScam = true;
-                    actualContentDetected = true; // Scam counts as harmful content
-                } else if (hasSuspiciousContext && isPokemonTrading) {
-                    const commandType = lowerContent.includes('.trade') ? '.trade' : 
-                                       lowerContent.includes('.me') ? '.me' : '.mysteryegg';
-                    console.log(`🎮 Suspicious ${commandType} context detected but Pokemon trading confirmed - no penalty applied`);
-                    analysis.reasoning.push(`Suspicious keywords detected but legitimate Pokemon trading confirmed - no penalty`);
-                } else if (isPokemonTrading) {
-                    const commandType = lowerContent.includes('.trade') ? '.trade' : 
-                                       lowerContent.includes('.me') ? '.me' : '.mysteryegg';
-                    console.log(`🎮 ${commandType} detected in Pokemon context - whitelisted`);
-                    analysis.reasoning.push(`Pokemon ${commandType} command detected - whitelisted`);
-                }
-            }
-            
-            // FIXED: Decision logic - only act on actual harmful content
+            // Decision logic based on final threat level
             if (isScam && analysis.threatLevel >= 6) {
                 analysis.violationType = 'SCAM';
                 analysis.action = 'ban';
             } else if (analysis.threatLevel >= config.moderationThresholds.ban && actualContentDetected) {
-                // Only ban if actual harmful content was detected, not just bypass attempts
                 analysis.violationType = 'SEVERE_TOXICITY';
                 analysis.action = 'ban';
             } else if (analysis.threatLevel >= config.moderationThresholds.mute && actualContentDetected) {
@@ -364,98 +329,38 @@ class EnhancedSynthiaAI {
                 analysis.violationType = 'DISRESPECTFUL';
                 analysis.action = 'warn';
             }
-            // NOTE: No special handling for bypass-only violations since we don't penalize them anymore
             
             // Update profile when violations detected
             if (analysis.violationType) {
-                if (!profile.violations) profile.violations = [];
-                profile.violations.push({
-                    timestamp: Date.now(),
-                    threatLevel: analysis.threatLevel,
-                    baseThreatLevel: baseThreatLevel,
-                    violationType: analysis.violationType,
-                    language: detectedLang,
-                    elongated: analysis.elongatedWords.length > 0,
-                    bypassDetected: analysis.bypassDetected,
-                    bypassAttempts: analysis.bypassAttempts,
-                    bypassMethods: analysis.bypassAttempts.map(b => b.type),
-                    normalizedContent: analysis.normalizedText,
-                    content: content.slice(0, 100),
-                    action: analysis.action,
-                    multiApiUsed: analysis.multiApiUsed,
-                    provider: analysis.language.provider,
-                    isScam: isScam,
-                    actualContentDetected: actualContentDetected
-                });
+                this.updateProfileWithViolation(profile, analysis, content, detectedLang, isScam, actualContentDetected);
                 
-                // Increased risk score for bypass attempts (but only if harmful content detected)
-                const baseRiskIncrease = Math.ceil(analysis.threatLevel / 3);
-                const bypassMultiplier = (analysis.bypassDetected && actualContentDetected) ? 1.5 : 1;
-                const riskIncrease = Math.ceil(baseRiskIncrease * bypassMultiplier);
-                
-                profile.riskScore = Math.min(10, (profile.riskScore || 0) + riskIncrease);
-                
-                if (!profile.languageHistory) profile.languageHistory = [];
-                profile.languageHistory.push({
-                    language: detectedLang,
-                    timestamp: Date.now(),
-                    threatLevel: analysis.threatLevel,
-                    bypassDetected: analysis.bypassDetected
-                });
-                
-                if (analysis.multiApiUsed) {
-                    profile.multiApiTranslations = (profile.multiApiTranslations || 0) + 1;
-                }
-
-                // Track bypass attempts in profile (only when harmful content detected)
-                if (analysis.bypassDetected && actualContentDetected) {
-                    if (!profile.bypassHistory) profile.bypassHistory = [];
-                    profile.bypassHistory.push({
-                        timestamp: Date.now(),
-                        methods: analysis.bypassAttempts.map(b => b.type),
-                        originalText: content.slice(0, 50),
-                        normalizedText: analysis.normalizedText?.slice(0, 50),
-                        penaltyApplied: analysis.threatLevel - baseThreatLevel,
-                        hadHarmfulContent: actualContentDetected
-                    });
-                    
-                    profile.totalBypassAttempts = (profile.totalBypassAttempts || 0) + 1;
-                }
-
-                // ENHANCED: Detailed logging for violations with bypass information
+                // Enhanced logging for violations
                 console.log(`🚨 VIOLATION DETECTED - User: ${author.tag}`);
                 console.log(`   Content: "${content}"`);
+                console.log(`   Multi-API Decision Engine: ${analysis.decisionEngineUsed ? 'USED' : 'FALLBACK'}`);
+                console.log(`   APIs consulted: ${analysis.apiResults ? Object.keys(analysis.apiResults).join(', ') : 'Local only'}`);
                 console.log(`   Actual harmful content detected: ${actualContentDetected}`);
                 if (analysis.bypassDetected) {
                     console.log(`   🔍 BYPASS DETECTED: Original normalized to "${analysis.normalizedText}"`);
                     console.log(`   🔍 Bypass Methods: ${analysis.bypassAttempts.map(b => b.type).join(', ')}`);
                     console.log(`   🔍 Bypass Penalty: +${analysis.threatLevel - baseThreatLevel}`);
-                    console.log(`   🔍 Bypass with harmful content: ${actualContentDetected}`);
                 }
                 console.log(`   Threat Level: ${analysis.threatLevel}/10 (base: ${baseThreatLevel})`);
-                console.log(`   Required Thresholds: Warn(${config.moderationThresholds.warn}) Delete(${config.moderationThresholds.delete}) Mute(${config.moderationThresholds.mute}) Ban(${config.moderationThresholds.ban})`);
                 console.log(`   Violation Type: ${analysis.violationType}`);
                 console.log(`   Action: ${analysis.action}`);
                 console.log(`   User Risk Score: ${profile.riskScore}/10`);
-                console.log(`   Total Bypass Attempts: ${profile.totalBypassAttempts || 0}`);
-                console.log(`   Reasoning: ${analysis.reasoning.join(', ')}`);
-                console.log(`   Is Scam: ${isScam}`);
-                console.log(`   Bypass Detection: ${analysis.bypassDetected ? 'ACTIVE & EFFECTIVE' : 'NO BYPASS DETECTED'}`);
                 
             } else if (analysis.threatLevel > 0) {
                 console.log(`⚪ Low threat detected but no action - User: ${author.tag}`);
-                console.log(`   Content: "${content}"`);
-                console.log(`   Actual harmful content detected: ${actualContentDetected}`);
-                if (analysis.bypassDetected) {
-                    console.log(`   🔍 BYPASS DETECTED but below threshold: "${analysis.normalizedText}"`);
-                    console.log(`   🔍 Bypass Methods: ${analysis.bypassAttempts.map(b => b.type).join(', ')}`);
-                    console.log(`   🔍 Bypass with harmful content: ${actualContentDetected}`);
-                }
+                console.log(`   Multi-API Analysis: ${analysis.decisionEngineUsed ? 'USED' : 'FALLBACK'}`);
                 console.log(`   Threat Level: ${analysis.threatLevel}/10 (below warn threshold ${config.moderationThresholds.warn})`);
             }
             
-            // Enhanced confidence calculation considering bypass detection
-            const baseConfidence = 50 + (analysis.threatLevel * 5) + (analysis.reasoning.length * 10);
+            // Enhanced confidence calculation
+            const baseConfidence = analysis.decisionEngineUsed ? 
+                analysis.confidence : // Use decision engine confidence
+                (50 + (analysis.threatLevel * 5) + (analysis.reasoning.length * 10)); // Fallback calculation
+            
             const bypassConfidenceBoost = (analysis.bypassDetected && actualContentDetected) ? 15 : 0;
             analysis.confidence = Math.min(100, baseConfidence + bypassConfidenceBoost);
             
@@ -474,6 +379,241 @@ class EnhancedSynthiaAI {
             analysis.confidence = 0;
             analysis.reasoning.push('Analysis error occurred');
             return analysis;
+        }
+    }
+
+    // NEW: Enhanced bypass detection method
+    async analyzeBypassAttempts(content) {
+        // Check if this is Pokemon content first
+        if (this.isPokemonRelatedContent(content)) {
+            return {
+                bypassDetected: false,
+                bypassAttempts: [],
+                elongatedWords: [],
+                normalizedText: content.toLowerCase()
+            };
+        }
+
+        // Use the translator's bypass detection
+        const normalizedText = this.synthiaTranslator.normalizeBypassAttempts(content);
+        const isNormalized = normalizedText !== content.toLowerCase();
+        
+        const result = {
+            bypassDetected: isNormalized,
+            bypassAttempts: [],
+            elongatedWords: [],
+            normalizedText: normalizedText
+        };
+
+        if (isNormalized) {
+            // Detect specific bypass types
+            result.bypassAttempts = this.detectBypassTypes(content, normalizedText);
+            
+            // Find elongated words
+            result.elongatedWords = this.findElongatedWords(content);
+        }
+
+        return result;
+    }
+
+    // NEW: Detect specific bypass types
+    detectBypassTypes(originalText, normalizedText) {
+        const bypassAttempts = [];
+        
+        // Check for elongation
+        const elongationMatches = originalText.match(/(.)\1{2,}/gi);
+        if (elongationMatches) {
+            bypassAttempts.push({
+                type: 'elongation',
+                patterns: elongationMatches,
+                severity: 2
+            });
+        }
+        
+        // Check for character substitution
+        const substitutionPattern = /[*@$!#%&^+=~`|\\<>{}[\]"';:?]/g;
+        const substitutionCount = (originalText.match(substitutionPattern) || []).length;
+        if (substitutionCount > 2) {
+            bypassAttempts.push({
+                type: 'character_substitution',
+                count: substitutionCount,
+                severity: 3
+            });
+        }
+        
+        // Check for separator bypassing
+        const separatorMatches = originalText.match(/[a-zA-Z][.*_\-/\\|+~^]+[a-zA-Z]/gi);
+        if (separatorMatches && separatorMatches.length > 1) {
+            bypassAttempts.push({
+                type: 'separator_bypassing',
+                patterns: separatorMatches,
+                severity: 3
+            });
+        }
+        
+        // Check for excessive spacing
+        const spacingMatches = originalText.match(/\b[a-zA-Z]\s+[a-zA-Z]\s+[a-zA-Z]/gi);
+        if (spacingMatches) {
+            bypassAttempts.push({
+                type: 'spacing_bypassing',
+                patterns: spacingMatches,
+                severity: 2
+            });
+        }
+        
+        // Check for leetspeak (excluding Pokemon codes)
+        const leetMatches = originalText.match(/[a-zA-Z]*[0-9]+[a-zA-Z]*/gi);
+        if (leetMatches && leetMatches.length > 0) {
+            const nonPokemonLeetMatches = leetMatches.filter(match => {
+                return !(/\.trade\s+\d{4,8}/i.test(originalText) && /^\d{4,8}$/.test(match)) &&
+                       !(/\.me\s+\d{4,8}/i.test(originalText) && /^\d{4,8}$/.test(match)) &&
+                       !(/\.mysteryegg\s+\d{4,8}/i.test(originalText) && /^\d{4,8}$/.test(match));
+            });
+            
+            if (nonPokemonLeetMatches.length > 0) {
+                bypassAttempts.push({
+                    type: 'leetspeak',
+                    patterns: nonPokemonLeetMatches,
+                    severity: 2
+                });
+            }
+        }
+        
+        return bypassAttempts;
+    }
+
+    // NEW: Find elongated words
+    findElongatedWords(text) {
+        const elongatedWords = [];
+        const words = text.split(/\s+/);
+        
+        for (const word of words) {
+            const elongationMatch = word.match(/(.)\1{2,}/gi);
+            if (elongationMatch) {
+                const normalized = word.replace(/(.)\1{2,}/gi, '$1');
+                elongatedWords.push({
+                    original: word,
+                    normalized: normalized,
+                    isElongated: true
+                });
+            }
+        }
+        
+        return elongatedWords;
+    }
+
+    // NEW: Enhanced scam detection with Pokemon awareness
+    detectScamContent(originalText, normalizedText) {
+        const lowerText = originalText.toLowerCase();
+        const normalizedLowerText = normalizedText ? normalizedText.toLowerCase() : lowerText;
+        
+        let scamScore = 0;
+        const reasons = [];
+        
+        const scamPatterns = [
+            'free nitro', 'discord gift', 'free robux', 'click here free',
+            'dm me for', 'guaranteed money', 'crypto scam', 'easy money'
+        ];
+        
+        for (const pattern of scamPatterns) {
+            if (lowerText.includes(pattern) || normalizedLowerText.includes(pattern)) {
+                scamScore += 4;
+                reasons.push(`Scam indicator: ${pattern}`);
+                
+                if (normalizedLowerText.includes(pattern) && !lowerText.includes(pattern)) {
+                    scamScore += 2;
+                    reasons.push(`Scam detected after bypass normalization`);
+                }
+            }
+        }
+        
+        // Enhanced .trade/.me/.mysteryegg scam detection with Pokemon protection
+        if (lowerText.includes('.trade') || lowerText.includes('.me') || lowerText.includes('.mysteryegg') || 
+            (normalizedLowerText && (normalizedLowerText.includes('.trade') || 
+            normalizedLowerText.includes('.me') || normalizedLowerText.includes('.mysteryegg')))) {
+            
+            const suspiciousContext = ['free', 'click', 'guaranteed', 'nitro', 'gift', 'scam', 'money'];
+            const hasSuspiciousContext = suspiciousContext.some(word => 
+                lowerText.includes(word) || 
+                (normalizedLowerText && normalizedLowerText.includes(word))
+            );
+            
+            const isPokemonTrading = this.isPokemonRelatedContent(originalText);
+            
+            if (hasSuspiciousContext && !isPokemonTrading) {
+                scamScore += 5;
+                const commandType = lowerText.includes('.trade') ? '.trade' : 
+                                   lowerText.includes('.me') ? '.me' : '.mysteryegg';
+                reasons.push(`Suspicious ${commandType} context detected`);
+            }
+        }
+        
+        return {
+            isScam: scamScore >= 4,
+            severity: scamScore,
+            reasons: reasons
+        };
+    }
+
+    // NEW: Update profile with violation information
+    updateProfileWithViolation(profile, analysis, content, detectedLang, isScam, actualContentDetected) {
+        if (!profile.violations) profile.violations = [];
+        
+        profile.violations.push({
+            timestamp: Date.now(),
+            threatLevel: analysis.threatLevel,
+            baseThreatLevel: analysis.threatLevel - (analysis.bypassAttempts?.reduce((sum, b) => sum + (b.severity || 1), 0) || 0),
+            violationType: analysis.violationType,
+            language: detectedLang,
+            elongated: analysis.elongatedWords.length > 0,
+            bypassDetected: analysis.bypassDetected,
+            bypassAttempts: analysis.bypassAttempts,
+            bypassMethods: analysis.bypassAttempts.map(b => b.type),
+            normalizedContent: analysis.normalizedText,
+            content: content.slice(0, 100),
+            action: analysis.action,
+            multiApiUsed: analysis.multiApiUsed,
+            decisionEngineUsed: analysis.decisionEngineUsed,
+            provider: analysis.language.provider,
+            isScam: isScam,
+            actualContentDetected: actualContentDetected,
+            apiResults: analysis.apiResults ? Object.keys(analysis.apiResults) : []
+        });
+        
+        // Update risk score
+        const baseRiskIncrease = Math.ceil(analysis.threatLevel / 3);
+        const bypassMultiplier = (analysis.bypassDetected && actualContentDetected) ? 1.5 : 1;
+        const riskIncrease = Math.ceil(baseRiskIncrease * bypassMultiplier);
+        
+        profile.riskScore = Math.min(10, (profile.riskScore || 0) + riskIncrease);
+        
+        // Update language history
+        if (!profile.languageHistory) profile.languageHistory = [];
+        profile.languageHistory.push({
+            language: detectedLang,
+            timestamp: Date.now(),
+            threatLevel: analysis.threatLevel,
+            bypassDetected: analysis.bypassDetected,
+            decisionEngineUsed: analysis.decisionEngineUsed
+        });
+        
+        if (analysis.multiApiUsed) {
+            profile.multiApiTranslations = (profile.multiApiTranslations || 0) + 1;
+        }
+
+        // Track bypass attempts
+        if (analysis.bypassDetected && actualContentDetected) {
+            if (!profile.bypassHistory) profile.bypassHistory = [];
+            profile.bypassHistory.push({
+                timestamp: Date.now(),
+                methods: analysis.bypassAttempts.map(b => b.type),
+                originalText: content.slice(0, 50),
+                normalizedText: analysis.normalizedText?.slice(0, 50),
+                penaltyApplied: analysis.threatLevel - (analysis.threatLevel - (analysis.bypassAttempts?.reduce((sum, b) => sum + (b.severity || 1), 0) || 0)),
+                hadHarmfulContent: actualContentDetected
+            });
+            
+            profile.totalBypassAttempts = (profile.totalBypassAttempts || 0) + 1;
         }
     }
 
@@ -538,6 +678,11 @@ class EnhancedSynthiaAI {
         };
     }
 
+    // Get Multi-API Decision Engine status
+    getDecisionEngineStatus() {
+        return this.decisionEngine.getSystemStatus();
+    }
+
     // Clear bypass history for a user
     clearBypassHistory(userId) {
         const profile = this.getProfile(userId);
@@ -588,7 +733,8 @@ class EnhancedSynthiaAI {
             affectedUsers: totalUsers,
             recentAttempts: recentAttempts.length,
             topBypassMethods: topMethods,
-            detectionRate: totalAttempts > 0 ? 100 : 0
+            detectionRate: totalAttempts > 0 ? 100 : 0,
+            decisionEngineHealth: this.decisionEngine.getSystemStatus().systemHealth
         };
     }
 }
