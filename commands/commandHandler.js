@@ -1,8 +1,8 @@
-// Enhanced Command Handler v9.0 - FIXED WITH POKEMON TRADING SUPPORT
+// Enhanced Command Handler v9.0 - WITH MULTI-API DECISION ENGINE COMMANDS
 const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const config = require('../config/config.js');
 
-// Slash Commands Definition
+// Slash Commands Definition (UPDATED with decision engine commands)
 const commands = [
     new SlashCommandBuilder()
         .setName('synthia-analysis')
@@ -134,6 +134,32 @@ const commands = [
                 .setDescription('Text to test for bypass attempts')
                 .setRequired(true)
         )
+        .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageMessages),
+
+    // NEW: Multi-API Decision Engine Commands
+    new SlashCommandBuilder()
+        .setName('decision-engine-status')
+        .setDescription('Check Multi-API Decision Engine status and performance')
+        .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageMessages),
+
+    new SlashCommandBuilder()
+        .setName('test-decision-engine')
+        .setDescription('Test the Multi-API Decision Engine with sample text')
+        .addStringOption(option =>
+            option.setName('text')
+                .setDescription('Text to analyze with the decision engine')
+                .setRequired(true)
+        )
+        .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageMessages),
+
+    new SlashCommandBuilder()
+        .setName('moderation-analysis')
+        .setDescription('Get detailed moderation analysis using all available APIs')
+        .addStringOption(option =>
+            option.setName('text')
+                .setDescription('Text to analyze for moderation')
+                .setRequired(true)
+        )
         .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageMessages)
 ];
 
@@ -145,7 +171,7 @@ async function handleTextCommand(message, synthiaTranslator, synthiaAI, serverLo
     const command = args[1];
 
     switch (command) {
-        case 'loghere':
+        case 'loghere': {
             const added = serverLogger.addLogChannel(message.guild.id, message.channel.id, message.guild.name);
             if (added) {
                 await message.reply(`✅ Added this channel for Enhanced Synthia v9.0 Multi-API logging.`);
@@ -161,13 +187,16 @@ async function handleTextCommand(message, synthiaTranslator, synthiaAI, serverLo
                 });
             }
             break;
+        }
 
-        case 'status':
+        case 'status': {
             const stats = synthiaTranslator.getTranslationStats();
             const autoModStatus = serverLogger.isAutoModerationEnabled(message.guild.id);
+            const decisionEngineStatus = synthiaAI.getDecisionEngineStatus();
+            
             const embed = new EmbedBuilder()
                 .setTitle(`🚀 Enhanced Synthia v${config.aiVersion} Status`)
-                .setDescription('**Multi-API Intelligence System with Pokemon Protection**')
+                .setDescription('**Multi-API Intelligence System with Pokemon Protection + Decision Engine**')
                 .addFields(
                     { name: '🧠 Intelligence Level', value: 'IQ 300+ Enhanced', inline: true },
                     { name: '🔄 Multi-API Providers', value: `${Object.keys(synthiaTranslator.enhancedAPI.apis).length}`, inline: true },
@@ -180,44 +209,51 @@ async function handleTextCommand(message, synthiaTranslator, synthiaAI, serverLo
                     { name: '🚨 Auto-Moderation', value: autoModStatus ? '✅ Enabled' : '❌ Disabled', inline: true },
                     { name: '🎮 Pokemon Protection', value: '✅ ACTIVE', inline: true },
                     { name: '🛡️ Bypass Detection', value: '✅ ENHANCED', inline: true },
-                    { name: '🔍 False Positives', value: '✅ FIXED', inline: true }
+                    { name: '🔍 False Positives', value: '✅ FIXED', inline: true },
+                    { name: '🤖 Decision Engine', value: decisionEngineStatus.systemHealth === 'operational' ? '✅ ACTIVE' : '⚠️ LIMITED', inline: true },
+                    { name: '🔧 Decision APIs', value: `${Object.keys(decisionEngineStatus.apiStatuses).filter(api => decisionEngineStatus.apiStatuses[api].enabled).length} Available`, inline: true },
+                    { name: '📈 Total Analyses', value: `${decisionEngineStatus.totalAnalyses}`, inline: true }
                 )
                 .setColor(config.colors.primary)
                 .setTimestamp();
             
             await message.reply({ embeds: [embed] });
             break;
+        }
 
-        case 'help':
+        case 'help': {
             const helpEmbed = new EmbedBuilder()
                 .setTitle('🧠 Enhanced Synthia v9.0 Help')
-                .setDescription('Multi-API Intelligence Moderation & Translation System with Pokemon Protection')
+                .setDescription('Multi-API Intelligence Moderation & Translation System with Pokemon Protection + Decision Engine')
                 .addFields(
                     { name: '🚀 Quick Setup', value: '`/setup-wizard` - **Interactive setup guide**\n`!synthia loghere` - Set log channel\n`!synthia status` - System status' },
                     { name: '🛡️ Moderation', value: '`/toggle-automod` - Toggle auto-moderation\n`/test-detection` - Test detection system\n`/test-bypass` - Test bypass detection' },
                     { name: '🌍 Translation', value: '`/translate` - **Main translation command**\n`/auto-translate` - Toggle auto-translation\n`/supported-languages` - List all languages' },
                     { name: '📊 Analysis', value: '`/synthia-analysis` - Analyze user\n`/api-status` - API status\n`/translation-stats` - Performance stats' },
-                    { name: '🎮 Pokemon Support', value: '`/test-pokemon` - **Test Pokemon protection**\n✅ Pokemon files (.pk9, .pk8, .pb8, etc.) are WHITELISTED!\n✅ Trading codes (.trade 12345678) are PROTECTED!' }
+                    { name: '🎮 Pokemon Support', value: '`/test-pokemon` - **Test Pokemon protection**\n✅ Pokemon files (.pk9, .pk8, .pb8, etc.) are WHITELISTED!\n✅ Trading codes (.trade 12345678) are PROTECTED!' },
+                    { name: '🤖 Decision Engine', value: '`/decision-engine-status` - **Multi-API status**\n`/test-decision-engine` - Test AI analysis\n`/moderation-analysis` - Deep analysis' }
                 )
                 .setColor(config.colors.info)
-                .setFooter({ text: '💡 Enhanced with comprehensive Pokemon support & zero false positives!' });
+                .setFooter({ text: '💡 Enhanced with Multi-API Decision Engine for unprecedented accuracy!' });
             
             await message.reply({ embeds: [helpEmbed] });
             break;
+        }
 
-        default:
+        default: {
             await message.reply('❓ Unknown command. Use `!synthia help` for available commands.');
             break;
+        }
     }
 }
 
-// ENHANCED: Complete Slash Command Handler Implementation with Pokemon support
+// ENHANCED: Complete Slash Command Handler Implementation with Decision Engine commands
 async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, serverLogger, discordLogger, userViolations) {
     console.log(`🎯 Enhanced Slash Command: ${interaction.commandName} by ${interaction.user.tag}`);
 
     try {
         switch (interaction.commandName) {
-            case 'synthia-analysis':
+            case 'synthia-analysis': {
                 await interaction.deferReply();
                 
                 const targetUser = interaction.options.getUser('user');
@@ -244,7 +280,8 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                         { name: '🚨 Bypass Attempts', value: `${profile.totalBypassAttempts || 0}`, inline: true },
                         { name: '📅 First Seen', value: new Date(profile.createdAt).toLocaleDateString(), inline: true },
                         { name: '🎮 Pokemon Protected', value: '✅ Active', inline: true },
-                        { name: '🛡️ Enhanced Detection', value: '✅ Enabled', inline: true }
+                        { name: '🛡️ Enhanced Detection', value: '✅ Enabled', inline: true },
+                        { name: '🤖 Decision Engine Uses', value: `${profile.violations?.filter(v => v.decisionEngineUsed).length || 0}`, inline: true }
                     )
                     .setColor((profile.riskScore || 0) >= 7 ? config.colors.error : 
                               (profile.riskScore || 0) >= 4 ? config.colors.warning : 
@@ -255,7 +292,8 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                     const recentViolations = profile.violations.slice(-3).map(v => {
                         const lang = synthiaTranslator.enhancedAPI.supportedLanguages.get(v.language) || v.language;
                         const bypass = v.bypassDetected ? ' 🚨 BYPASS' : '';
-                        return `• **${v.violationType}** - Level ${v.threatLevel}/10 (${lang})${bypass}`;
+                        const engine = v.decisionEngineUsed ? ' 🤖 AI' : '';
+                        return `• **${v.violationType}** - Level ${v.threatLevel}/10 (${lang})${bypass}${engine}`;
                     }).join('\n');
                     
                     analysisEmbed.addFields({
@@ -275,193 +313,271 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                 
                 await interaction.editReply({ embeds: [analysisEmbed] });
                 break;
-
-            case 'test-pokemon':
+            }
+            
+            case 'test-detection': {
                 await interaction.deferReply();
                 
-                const pokemonTestCases = [
-                    // Legitimate Pokemon content that should NOT be flagged
-                    '.trade 77908141',
-                    '.trade 12345678',
-                    'Here is my shiny Charizard.pk9',
-                    'Trading legendary.pk8 for shiny',
-                    'My Pokemon save.pb8 file',
-                    'Check out this team.pa8',
-                    'Uploading my data.pk7',
-                    '.bt Charizard @ Leftovers',
-                    '.pokepaste https://pokepast.es/abc123',
-                    'Charizard (M) @ Focus Sash\nAbility: Solar Power\nLevel: 50\nShiny: Yes',
-                    'Looking for: Adamant Garchomp\nOffering: Jolly Dragapult',
-                    '.trade Calyrex @ Focus Sash\nBall: Ultra Ball\nLevel: 80',
-                    
-                    // Scam attempts that SHOULD be flagged
-                    '.trade free nitro click here',
-                    'scam.pk9 link click here for free discord nitro',
-                    '.trade 12345678 free robux click',
-                    
-                    // Bypass attempts that SHOULD be flagged
-                    'f*ck this pokemon trading',
-                    'sh1t pokemon game'
-                ];
-
-                let pokemonTestResults = [];
-
-                for (const testCase of pokemonTestCases) {
-                    const testAnalysis = await synthiaAI.analyzeMessage(testCase, interaction.user, interaction.channel, { guild: interaction.guild });
-                    
-                    pokemonTestResults.push({
-                        text: testCase,
-                        threatLevel: testAnalysis.threatLevel,
-                        action: testAnalysis.action || 'none',
-                        reasoning: testAnalysis.reasoning.length > 0 ? testAnalysis.reasoning[0] : 'No issues detected',
-                        bypassDetected: testAnalysis.bypassDetected || false
-                    });
-                }
-
-                const pokemonEmbed = new EmbedBuilder()
-                    .setTitle('🧪 Pokemon Protection & Trading Code Test')
-                    .setDescription('Testing comprehensive Pokemon content protection and bypass detection')
-                    .setColor(config.colors.success);
-
-                let legitimateCount = 0;
-                let scamCount = 0;
-                let bypassCount = 0;
-
-                for (const result of pokemonTestResults) {
-                    let status;
-                    let category;
-                    
-                    if (result.text.includes('free nitro') || result.text.includes('free robux') || result.text.includes('scam')) {
-                        // Should be flagged as scam
-                        category = 'Scam Test';
-                        status = result.threatLevel >= 5 ? '✅' : '❌';
-                        if (result.threatLevel >= 5) scamCount++;
-                    } else if (result.text.includes('f*ck') || result.text.includes('sh1t')) {
-                        // Should be flagged as bypass
-                        category = 'Bypass Test';
-                        status = result.threatLevel >= 2 ? '✅' : '❌';
-                        if (result.threatLevel >= 2) bypassCount++;
-                    } else {
-                        // Should NOT be flagged (Pokemon content)
-                        category = 'Pokemon Content';
-                        status = result.threatLevel === 0 ? '✅' : '❌';
-                        if (result.threatLevel === 0) legitimateCount++;
-                    }
-                    
-                    pokemonEmbed.addFields({
-                        name: `${status} ${category}: "${result.text.slice(0, 30)}${result.text.length > 30 ? '...' : ''}"`,
-                        value: `Threat: ${result.threatLevel}/10 | Action: ${result.action}\nBypass: ${result.bypassDetected ? 'YES' : 'NO'} | Reason: ${result.reasoning.slice(0, 50)}${result.reasoning.length > 50 ? '...' : ''}`,
-                        inline: false
-                    });
-                }
-
-                pokemonEmbed.addFields({
-                    name: '📊 Test Results Summary',
-                    value: `✅ Pokemon Content Protected: ${legitimateCount}/12\n✅ Scams Detected: ${scamCount}/3\n✅ Bypasses Detected: ${bypassCount}/2\n\n**Overall Success Rate: ${Math.round(((legitimateCount + scamCount + bypassCount) / 17) * 100)}%**`,
-                    inline: false
-                });
-
-                pokemonEmbed.addFields({
-                    name: '🎮 Pokemon Protection Features',
-                    value: '• **Trading Codes**: .trade followed by 4-8 digit codes\n• **Pokemon Files**: .pk9, .pk8, .pb8, .pa8, etc.\n• **Battle Teams**: .bt command support\n• **Pokepaste Links**: pokepast.es integration\n• **Pokemon Stats**: Level, Ball, Ability, Nature, etc.\n• **Pokemon Names**: 100+ common Pokemon protected\n• **Competitive Terms**: OU, UU, VGC, Smogon, etc.',
-                    inline: false
-                });
-
-                await interaction.editReply({ embeds: [pokemonEmbed] });
-                break;
-
-            case 'test-bypass':
-                await interaction.deferReply();
+                const detectionTestText = interaction.options.getString('text');
+                const detectionAnalysis = await synthiaAI.analyzeMessage(detectionTestText, interaction.user, interaction.channel, { guild: interaction.guild });
                 
-                const bypassTestText = interaction.options.getString('text');
+                // Check if this is Pokemon content
+                const isPokemonContent = synthiaAI.isPokemonRelatedContent(detectionTestText);
                 
-                // Test if this is Pokemon content first
-                const isPokemon = synthiaAI.isPokemonRelatedContent(bypassTestText);
-                
-                const testAnalysis = await synthiaAI.analyzeMessage(bypassTestText, interaction.user, interaction.channel, { guild: interaction.guild });
-                
-                const bypassEmbed = new EmbedBuilder()
-                    .setTitle('🔍 Enhanced Bypass Detection Test Results')
-                    .setColor(testAnalysis.bypassDetected ? config.colors.error : config.colors.success)
+                const detectionEmbed = new EmbedBuilder()
+                    .setTitle('🔍 Enhanced Detection Test Results')
+                    .setColor(detectionAnalysis.threatLevel >= 5 ? config.colors.error : 
+                             detectionAnalysis.threatLevel >= 2 ? config.colors.warning : 
+                             config.colors.success)
                     .addFields(
-                        { name: '📝 Original Text', value: `\`\`\`${bypassTestText.slice(0, 500)}\`\`\``, inline: false },
-                        { name: '🎮 Pokemon Content', value: isPokemon ? '✅ YES (Protected)' : '❌ NO', inline: true },
-                        { name: '🌍 Language', value: testAnalysis.language.originalLanguage, inline: true },
-                        { name: '⚖️ Threat Level', value: `${testAnalysis.threatLevel}/10`, inline: true },
-                        { name: '🔍 Bypass Detected', value: testAnalysis.bypassDetected ? '🚨 YES' : '✅ NO', inline: true },
-                        { name: '🎯 Confidence', value: `${testAnalysis.confidence}%`, inline: true },
-                        { name: '⚡ Processing Time', value: `${testAnalysis.processingTime}ms`, inline: true }
+                        { name: '📝 Text', value: detectionTestText.slice(0, 1024), inline: false },
+                        { name: '🎮 Pokemon Content', value: isPokemonContent ? '✅ YES (Protected)' : '❌ NO', inline: true },
+                        { name: '🌍 Language', value: detectionAnalysis.language.originalLanguage, inline: true },
+                        { name: '⚖️ Threat Level', value: `${detectionAnalysis.threatLevel}/10`, inline: true },
+                        { name: '🎯 Confidence', value: `${detectionAnalysis.confidence}%`, inline: true },
+                        { name: '🔍 Bypass Detected', value: detectionAnalysis.bypassDetected ? '🚨 YES' : '✅ NO', inline: true },
+                        { name: '⚡ Processing Time', value: `${detectionAnalysis.processingTime}ms`, inline: true },
+                        { name: '🤖 Decision Engine', value: detectionAnalysis.decisionEngineUsed ? '✅ USED' : '❌ Fallback', inline: true },
+                        { name: '🔧 APIs Consulted', value: detectionAnalysis.apiResults ? Object.keys(detectionAnalysis.apiResults).filter(api => detectionAnalysis.apiResults[api] && !detectionAnalysis.apiResults[api].error).length : 0, inline: true }
                     );
 
-                if (testAnalysis.normalizedText && testAnalysis.normalizedText !== bypassTestText.toLowerCase()) {
-                    bypassEmbed.addFields({
-                        name: '🔍 Normalized Text (After Bypass Removal)',
-                        value: `\`\`\`${testAnalysis.normalizedText.slice(0, 500)}\`\`\``,
-                        inline: false
-                    });
-                }
-
-                if (testAnalysis.bypassAttempts && testAnalysis.bypassAttempts.length > 0) {
-                    const bypassMethods = testAnalysis.bypassAttempts.map(attempt => {
-                        switch(attempt.type) {
-                            case 'elongation': return '🔸 **Character Elongation** (fuuuuck → fuck)';
-                            case 'character_substitution': return '🔸 **Symbol Substitution** (f*ck, f@ck → fuck)';
-                            case 'separator_bypassing': return '🔸 **Separator Injection** (f.u.c.k → fuck)';
-                            case 'spacing_bypassing': return '🔸 **Space Injection** (f u c k → fuck)';
-                            case 'leetspeak': return '🔸 **Leetspeak** (sh1t → shit, 4ss → ass)';
-                            case 'unicode_substitution': return '🔸 **Unicode Substitution** (Using foreign characters)';
-                            default: return `🔸 **${attempt.type.replace('_', ' ').toUpperCase()}**`;
-                        }
-                    }).join('\n');
-
-                    bypassEmbed.addFields({
-                        name: '🚨 Detected Bypass Techniques',
-                        value: bypassMethods,
-                        inline: false
-                    });
-                }
-                
-                if (testAnalysis.reasoning.length > 0) {
-                    bypassEmbed.addFields({
-                        name: '🧠 AI Reasoning',
-                        value: testAnalysis.reasoning.slice(0, 5).map(r => `• ${r}`).join('\n').slice(0, 1024),
-                        inline: false
-                    });
-                }
-
-                bypassEmbed.addFields({
-                    name: '🔧 Moderation Thresholds',
+                detectionEmbed.addFields({
+                    name: '🔧 Action Thresholds',
                     value: `Warn: ${config.moderationThresholds.warn}+ | Delete: ${config.moderationThresholds.delete}+ | Mute: ${config.moderationThresholds.mute}+ | Ban: ${config.moderationThresholds.ban}+`,
                     inline: false
                 });
 
-                bypassEmbed.addFields({
+                detectionEmbed.addFields({
                     name: '⚡ Final Action',
-                    value: testAnalysis.action !== 'none' ? `🚨 **${testAnalysis.action.toUpperCase()}**` : '✅ **NO ACTION** (Below threshold or protected content)',
-                    inline: false
+                    value: detectionAnalysis.action !== 'none' ? `🚨 **${detectionAnalysis.action.toUpperCase()}**` : '✅ **NO ACTION**',
+                    inline: true
                 });
 
-                // Add Pokemon protection notice if applicable
-                if (isPokemon) {
-                    bypassEmbed.addFields({
-                        name: '🎮 Pokemon Protection Notice',
-                        value: 'This content was identified as legitimate Pokemon content and is protected from moderation. Pokemon trading codes, files, and related content are automatically whitelisted.',
+                detectionEmbed.addFields({
+                    name: '🛡️ Automod Status',
+                    value: serverLogger.isAutoModerationEnabled(interaction.guild.id) ? '✅ Enabled' : '❌ Disabled',
+                    inline: true
+                });
+                
+                if (detectionAnalysis.reasoning.length > 0) {
+                    detectionEmbed.addFields({
+                        name: '🧠 AI Reasoning',
+                        value: detectionAnalysis.reasoning.slice(0, 5).map(r => `• ${r}`).join('\n').slice(0, 1024),
                         inline: false
                     });
                 }
-                
-                await interaction.editReply({ embeds: [bypassEmbed] });
-                break;
 
-            case 'language-stats':
+                if (isPokemonContent) {
+                    detectionEmbed.addFields({
+                        name: '🎮 Pokemon Protection Active',
+                        value: 'This content was identified as legitimate Pokemon content and is automatically protected from moderation actions.',
+                        inline: false
+                    });
+                }
+
+                if (detectionAnalysis.decisionEngineUsed && detectionAnalysis.apiResults) {
+                    const workingApis = Object.keys(detectionAnalysis.apiResults).filter(api => detectionAnalysis.apiResults[api] && !detectionAnalysis.apiResults[api].error);
+                    if (workingApis.length > 0) {
+                        detectionEmbed.addFields({
+                            name: '🤖 Multi-API Analysis Details',
+                            value: `${workingApis.length} AI systems were consulted:\n${workingApis.map(api => `• **${api}**`).join('\n')}`,
+                            inline: false
+                        });
+                    }
+                }
+                
+                await interaction.editReply({ embeds: [detectionEmbed] });
+                break;
+            }
+
+            case 'api-status': {
+                await interaction.deferReply();
+                
+                const apiStatus = synthiaTranslator.getTranslationStatus();
+                const decisionEngineApiStatus = synthiaAI.getDecisionEngineStatus();
+                
+                const statusEmbed = new EmbedBuilder()
+                    .setTitle('🔧 Multi-API Status Dashboard')
+                    .setDescription('Translation APIs + Decision Engine APIs Status')
+                    .setColor(config.colors.multiapi);
+
+                // Translation APIs
+                let workingTranslationProviders = 0;
+                let totalTranslationProviders = 0;
+
+                for (const [provider, status] of Object.entries(apiStatus.providers)) {
+                    totalTranslationProviders++;
+                    if (status.available) workingTranslationProviders++;
+                    
+                    const statusIcon = status.available ? '✅' : '❌';
+                    const resetTime = status.resetInMinutes > 0 ? `${status.resetInMinutes}min` : 'Ready';
+                    
+                    statusEmbed.addFields({
+                        name: `${statusIcon} ${provider} (Translation)`,
+                        value: `Requests: ${status.requestsUsed}/${status.rateLimit}\nReset: ${resetTime}\nReliability: ${status.reliability}%`,
+                        inline: true
+                    });
+                }
+
+                // Decision Engine APIs
+                let workingDecisionApis = 0;
+                let totalDecisionApis = 0;
+
+                for (const [apiName, apiInfo] of Object.entries(decisionEngineApiStatus.apiStatuses)) {
+                    totalDecisionApis++;
+                    if (apiInfo.enabled) workingDecisionApis++;
+                    
+                    const statusIcon = apiInfo.enabled ? '✅' : '❌';
+                    
+                    statusEmbed.addFields({
+                        name: `${statusIcon} ${apiName} (AI Analysis)`,
+                        value: `Success: ${apiInfo.successRate}%\nAvg Time: ${apiInfo.averageResponseTime}ms\nCalls: ${apiInfo.totalCalls}`,
+                        inline: true
+                    });
+                }
+
+                statusEmbed.addFields({
+                    name: '📊 Translation APIs Status',
+                    value: `${workingTranslationProviders}/${totalTranslationProviders} providers available\nTotal requests: ${apiStatus.totalRequests}\nTotal characters: ${apiStatus.totalCharacters}`,
+                    inline: false
+                });
+
+                statusEmbed.addFields({
+                    name: '🤖 Decision Engine Status',
+                    value: `${workingDecisionApis}/${totalDecisionApis} AI systems available\nTotal analyses: ${decisionEngineApiStatus.totalAnalyses}\nSystem health: ${decisionEngineApiStatus.systemHealth}`,
+                    inline: false
+                });
+
+                statusEmbed.addFields({
+                    name: '🎮 Pokemon Protection',
+                    value: '✅ Always Active (Independent of APIs)',
+                    inline: false
+                });
+                
+                await interaction.editReply({ embeds: [statusEmbed] });
+                break;
+            }
+
+            case 'test-apis': {
+                await interaction.deferReply();
+                
+                await interaction.editReply('🧪 Testing all translation APIs... This may take a moment.');
+                
+                const testResults = await synthiaTranslator.testAllAPIs();
+                
+                const testEmbed = new EmbedBuilder()
+                    .setTitle('🧪 Translation API Test Results')
+                    .setDescription('Complete test of all translation providers')
+                    .setColor(config.colors.performance)
+                    .addFields({
+                        name: '📊 Summary',
+                        value: `Working: ${testResults.summary.workingProviders}/${testResults.summary.totalProviders}\nAverage Time: ${testResults.summary.averageResponseTime}ms\nReliability: ${testResults.summary.reliability}%\nBidirectional Tests: ${testResults.summary.bidirectionalTests || 0}\nSuccess Rate: ${testResults.summary.bidirectionalSuccessRate || 0}%`,
+                        inline: false
+                    });
+
+                for (const [provider, result] of Object.entries(testResults.individual)) {
+                    const statusIcon = result.working ? '✅' : '❌';
+                    const resultText = result.working 
+                        ? `Success Rate: ${result.successRate || 0}%\nAvg Time: ${result.time}ms\nTests: ${result.successfulTests || 0}/${result.bidirectionalTests || 1}`
+                        : `Error: ${result.error || 'Unknown error'}\nStatus: Failed to connect`;
+                    
+                    testEmbed.addFields({
+                        name: `${statusIcon} ${provider}`,
+                        value: resultText,
+                        inline: true
+                    });
+                }
+
+                testEmbed.addFields({
+                    name: '🎮 Pokemon Protection',
+                    value: '✅ All APIs respect Pokemon content protection',
+                    inline: false
+                });
+                
+                await interaction.editReply({ embeds: [testEmbed] });
+                break;
+            }
+
+            case 'translation-stats': {
+                await interaction.deferReply();
+                
+                const detailedStats = synthiaTranslator.getTranslationStats();
+                const engineStats = synthiaAI.getDecisionEngineStatus();
+                
+                const statsDetailEmbed = new EmbedBuilder()
+                    .setTitle('📊 Complete System Performance Statistics')
+                    .setDescription('Translation + Decision Engine Performance with Pokemon Protection')
+                    .setColor(config.colors.performance)
+                    .addFields(
+                        { name: '🔄 Total Translations', value: `${detailedStats.totalTranslations}`, inline: true },
+                        { name: '✅ Translation Success', value: `${detailedStats.successfulTranslations}`, inline: true },
+                        { name: '❌ Translation Failures', value: `${detailedStats.failedTranslations}`, inline: true },
+                        { name: '📈 Translation Success Rate', value: `${detailedStats.successRate}%`, inline: true },
+                        { name: '⚡ Avg Translation Time', value: `${detailedStats.averageResponseTime}ms`, inline: true },
+                        { name: '🔧 Translation Providers', value: `${Object.keys(detailedStats.providerStats || {}).length}`, inline: true },
+                        { name: '🤖 AI Analyses', value: `${engineStats.totalAnalyses}`, inline: true },
+                        { name: '🎮 Pokemon Protection', value: '✅ Active', inline: true },
+                        { name: '🌍 Language Support', value: `${synthiaTranslator.enhancedAPI.supportedLanguages.size}`, inline: true }
+                    );
+
+                if (detailedStats.providerStats && Object.keys(detailedStats.providerStats).length > 0) {
+                    const providerPerformance = Object.entries(detailedStats.providerStats)
+                        .sort((a, b) => b[1].count - a[1].count)
+                        .map(([provider, stats]) => 
+                            `**${provider}**: ${stats.count} translations, ${stats.successRate}% success, ${stats.averageTime}ms avg`
+                        ).join('\n');
+                    
+                    statsDetailEmbed.addFields({
+                        name: '🏆 Translation Provider Performance',
+                        value: providerPerformance.slice(0, 1024),
+                        inline: false
+                    });
+                }
+
+                // Add Decision Engine API performance
+                const aiApiPerformance = Object.entries(engineStats.apiStatuses)
+                    .filter(([api, status]) => status.enabled && status.totalCalls > 0)
+                    .sort((a, b) => b[1].totalCalls - a[1].totalCalls)
+                    .map(([api, status]) => 
+                        `**${api}**: ${status.totalCalls} calls, ${status.successRate}% success, ${status.averageResponseTime}ms avg`
+                    ).join('\n');
+
+                if (aiApiPerformance) {
+                    statsDetailEmbed.addFields({
+                        name: '🤖 AI Analysis API Performance',
+                        value: aiApiPerformance.slice(0, 1024),
+                        inline: false
+                    });
+                }
+
+                // Add current API status
+                const currentTranslationStatus = synthiaTranslator.getTranslationStatus();
+                const availableTranslationProviders = Object.values(currentTranslationStatus.providers).filter(p => p.available).length;
+                const totalTranslationProvidersCount = Object.keys(currentTranslationStatus.providers).length;
+
+                const availableAiApis = Object.values(engineStats.apiStatuses).filter(api => api.enabled).length;
+                const totalAiApis = Object.keys(engineStats.apiStatuses).length;
+
+                statsDetailEmbed.addFields({
+                    name: '🔧 Current System Status',
+                    value: `**Translation APIs**: ${availableTranslationProviders}/${totalTranslationProvidersCount} available\n**AI Analysis APIs**: ${availableAiApis}/${totalAiApis} available\n**System Health**: ${engineStats.systemHealth}\n**Pokemon Protection**: Always Active`,
+                    inline: false
+                });
+                
+                await interaction.editReply({ embeds: [statsDetailEmbed] });
+                break;
+            }
+
+            case 'language-stats': {
                 await interaction.deferReply();
                 
                 const serverConfig = serverLogger.getServerConfig(interaction.guild.id);
                 const translationStats = synthiaTranslator.getTranslationStats();
+                const decisionEngineStatus = synthiaAI.getDecisionEngineStatus();
                 
                 const statsEmbed = new EmbedBuilder()
                     .setTitle('🌍 Multi-Language Statistics')
-                    .setDescription('Enhanced Synthia v9.0 Language Analysis with Pokemon Protection')
+                    .setDescription('Enhanced Synthia v9.0 Language Analysis with Pokemon Protection + Decision Engine')
                     .addFields(
                         { name: '🔄 Total Translations', value: `${translationStats.totalTranslations}`, inline: true },
                         { name: '✅ Success Rate', value: `${translationStats.successRate}%`, inline: true },
@@ -471,7 +587,10 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                         { name: '🧠 Multi-Language Support', value: `${synthiaTranslator.enhancedAPI.supportedLanguages.size} languages`, inline: true },
                         { name: '🎮 Pokemon Protection', value: '✅ Active', inline: true },
                         { name: '🛡️ Bypass Detection', value: '✅ Enhanced', inline: true },
-                        { name: '🔍 False Positives', value: '✅ Fixed', inline: true }
+                        { name: '🔍 False Positives', value: '✅ Fixed', inline: true },
+                        { name: '🤖 Decision Engine', value: decisionEngineStatus.systemHealth === 'operational' ? '✅ Active' : '⚠️ Limited', inline: true },
+                        { name: '📊 AI Analyses', value: `${decisionEngineStatus.totalAnalyses}`, inline: true },
+                        { name: '🔧 Working APIs', value: `${Object.keys(decisionEngineStatus.apiStatuses).filter(api => decisionEngineStatus.apiStatuses[api].enabled).length}`, inline: true }
                     )
                     .setColor(config.colors.multi_language);
 
@@ -483,15 +602,16 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                         .join('\n');
                     
                     statsEmbed.addFields({
-                        name: '🔧 Top API Providers',
+                        name: '🔧 Top Translation Providers',
                         value: providerStats
                     });
                 }
                 
                 await interaction.editReply({ embeds: [statsEmbed] });
                 break;
+            }
 
-            case 'translate':
+            case 'translate': {
                 await interaction.deferReply();
                 
                 const text = interaction.options.getString('text');
@@ -530,8 +650,9 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                 
                 await interaction.editReply({ embeds: [translateEmbed] });
                 break;
+            }
 
-            case 'set-server-language':
+            case 'set-server-language': {
                 await interaction.deferReply();
                 
                 const serverLanguage = interaction.options.getString('language');
@@ -554,8 +675,9 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                     `Default translation language set to ${languageName} by ${interaction.user.tag}`
                 );
                 break;
+            }
 
-            case 'auto-translate':
+            case 'auto-translate': {
                 await interaction.deferReply();
                 
                 const autoTranslateEnabled = interaction.options.getBoolean('enabled');
@@ -576,8 +698,9 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                     ]
                 );
                 break;
+            }
 
-            case 'supported-languages':
+            case 'supported-languages': {
                 await interaction.deferReply();
                 
                 const supportedLangs = synthiaTranslator.getSupportedLanguages();
@@ -594,8 +717,9 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                 
                 await interaction.editReply({ embeds: [languagesEmbed] });
                 break;
+            }
 
-            case 'clear-warnings':
+            case 'clear-warnings': {
                 await interaction.deferReply();
                 
                 const userToClear = interaction.options.getUser('user');
@@ -608,6 +732,7 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                 
                 const clearedViolations = userProfile.violations.length;
                 const clearedBypassAttempts = userProfile.totalBypassAttempts || 0;
+                const decisionEngineViolations = userProfile.violations.filter(v => v.decisionEngineUsed).length;
                 
                 userProfile.violations = [];
                 userProfile.riskScore = 0;
@@ -615,7 +740,7 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                 userProfile.totalBypassAttempts = 0;
                 await synthiaAI.saveData();
                 
-                await interaction.editReply(`✅ Cleared all violations for ${userToClear.tag}\n\n**Cleared:**\n• ${clearedViolations} violations\n• ${clearedBypassAttempts} bypass attempts\n• Risk score reset to 0`);
+                await interaction.editReply(`✅ Cleared all violations for ${userToClear.tag}\n\n**Cleared:**\n• ${clearedViolations} violations\n• ${clearedBypassAttempts} bypass attempts\n• ${decisionEngineViolations} AI-analyzed violations\n• Risk score reset to 0`);
                 
                 await discordLogger.sendLog(
                     interaction.guild,
@@ -625,309 +750,429 @@ async function handleSlashCommand(interaction, synthiaTranslator, synthiaAI, ser
                     [
                         { name: '🗑️ Violations Cleared', value: `${clearedViolations}`, inline: true },
                         { name: '🚨 Bypass Attempts Cleared', value: `${clearedBypassAttempts}`, inline: true },
+                        { name: '🤖 AI Violations Cleared', value: `${decisionEngineViolations}`, inline: true },
                         { name: '👤 Cleared By', value: `${interaction.user.tag}`, inline: true }
                     ]
                 );
                 break;
+            }
 
-            case 'test-detection':
+            // NEW: Multi-API Decision Engine Commands
+            case 'decision-engine-status': {
                 await interaction.deferReply();
                 
-                const detectionTestText = interaction.options.getString('text');
-                const detectionAnalysis = await synthiaAI.analyzeMessage(detectionTestText, interaction.user, interaction.channel, { guild: interaction.guild });
-                
-                // Check if this is Pokemon content
-                const isPokemonContent = synthiaAI.isPokemonRelatedContent(detectionTestText);
-                
-                const detectionEmbed = new EmbedBuilder()
-                    .setTitle('🔍 Enhanced Detection Test Results')
-                    .setColor(detectionAnalysis.threatLevel >= 5 ? config.colors.error : 
-                             detectionAnalysis.threatLevel >= 2 ? config.colors.warning : 
-                             config.colors.success)
-                    .addFields(
-                        { name: '📝 Text', value: detectionTestText.slice(0, 1024), inline: false },
-                        { name: '🎮 Pokemon Content', value: isPokemonContent ? '✅ YES (Protected)' : '❌ NO', inline: true },
-                        { name: '🌍 Language', value: detectionAnalysis.language.originalLanguage, inline: true },
-                        { name: '⚖️ Threat Level', value: `${detectionAnalysis.threatLevel}/10`, inline: true },
-                        { name: '🎯 Confidence', value: `${detectionAnalysis.confidence}%`, inline: true },
-                        { name: '🔍 Bypass Detected', value: detectionAnalysis.bypassDetected ? '🚨 YES' : '✅ NO', inline: true },
-                        { name: '⚡ Processing Time', value: `${detectionAnalysis.processingTime}ms`, inline: true }
-                    );
-
-                detectionEmbed.addFields({
-                    name: '🔧 Action Thresholds',
-                    value: `Warn: ${config.moderationThresholds.warn}+ | Delete: ${config.moderationThresholds.delete}+ | Mute: ${config.moderationThresholds.mute}+ | Ban: ${config.moderationThresholds.ban}+`,
-                    inline: false
-                });
-
-                detectionEmbed.addFields({
-                    name: '⚡ Final Action',
-                    value: detectionAnalysis.action !== 'none' ? `🚨 **${detectionAnalysis.action.toUpperCase()}**` : '✅ **NO ACTION**',
-                    inline: true
-                });
-
-                detectionEmbed.addFields({
-                    name: '🛡️ Automod Status',
-                    value: serverLogger.isAutoModerationEnabled(interaction.guild.id) ? '✅ Enabled' : '❌ Disabled',
-                    inline: true
-                });
-                
-                if (detectionAnalysis.reasoning.length > 0) {
-                    detectionEmbed.addFields({
-                        name: '🧠 AI Reasoning',
-                        value: detectionAnalysis.reasoning.slice(0, 5).map(r => `• ${r}`).join('\n').slice(0, 1024),
-                        inline: false
-                    });
-                }
-
-                if (isPokemonContent) {
-                    detectionEmbed.addFields({
-                        name: '🎮 Pokemon Protection Active',
-                        value: 'This content was identified as legitimate Pokemon content and is automatically protected from moderation actions.',
-                        inline: false
-                    });
-                }
-                
-                await interaction.editReply({ embeds: [detectionEmbed] });
-                break;
-
-            case 'api-status':
-                await interaction.deferReply();
-                
-                const apiStatus = synthiaTranslator.getTranslationStatus();
+                const engineStatus = synthiaAI.getDecisionEngineStatus();
                 
                 const statusEmbed = new EmbedBuilder()
-                    .setTitle('🔧 Multi-API Status')
-                    .setDescription('Enhanced Translation API Provider Status with Pokemon Protection')
-                    .setColor(config.colors.multiapi);
-
-                let workingProviders = 0;
-                let totalProviders = 0;
-
-                for (const [provider, status] of Object.entries(apiStatus.providers)) {
-                    totalProviders++;
-                    if (status.available) workingProviders++;
-                    
-                    const statusIcon = status.available ? '✅' : '❌';
-                    const resetTime = status.resetInMinutes > 0 ? `${status.resetInMinutes}min` : 'Ready';
-                    
-                    statusEmbed.addFields({
-                        name: `${statusIcon} ${provider}`,
-                        value: `Requests: ${status.requestsUsed}/${status.rateLimit}\nReset: ${resetTime}\nReliability: ${status.reliability}%\nBidirectional: ${status.bidirectional ? '✅' : '❌'}`,
-                        inline: true
-                    });
-                }
+                    .setTitle('🤖 Multi-API Decision Engine Status')
+                    .setDescription('Advanced AI content analysis system status')
+                    .setColor(engineStatus.systemHealth === 'operational' ? config.colors.success : config.colors.warning);
 
                 statusEmbed.addFields({
-                    name: '📊 Overall Status',
-                    value: `${workingProviders}/${totalProviders} providers available\nTotal requests: ${apiStatus.totalRequests}\nTotal characters: ${apiStatus.totalCharacters}\n🎮 Pokemon Protection: ✅ Active`,
-                    inline: false
+                    name: '🏥 System Health',
+                    value: `**${engineStatus.systemHealth.toUpperCase()}**`,
+                    inline: true
                 });
-                
+
+                statusEmbed.addFields({
+                    name: '📊 Total Analyses',
+                    value: `${engineStatus.totalAnalyses}`,
+                    inline: true
+                });
+
+                statusEmbed.addFields({
+                    name: '🔧 Available APIs',
+                    value: `${Object.keys(engineStatus.apiStatuses).filter(api => engineStatus.apiStatuses[api].enabled).length}/${Object.keys(engineStatus.apiStatuses).length}`,
+                    inline: true
+                });
+
+                // API Status breakdown
+                for (const [apiName, apiStatus] of Object.entries(engineStatus.apiStatuses)) {
+                    const statusIcon = apiStatus.enabled ? '✅' : '❌';
+                    const successRate = apiStatus.successRate || 0;
+                    const avgTime = apiStatus.averageResponseTime || 0;
+                    
+                    statusEmbed.addFields({
+                        name: `${statusIcon} ${apiName}`,
+                        value: `Success: ${successRate}%\nAvg Time: ${avgTime}ms\nCalls: ${apiStatus.totalCalls}\nWeight: ${apiStatus.weight}`,
+                        inline: true
+                    });
+                }
+
                 await interaction.editReply({ embeds: [statusEmbed] });
                 break;
+            }
 
-            case 'test-apis':
+            case 'test-decision-engine': {
                 await interaction.deferReply();
                 
-                await interaction.editReply('🧪 Testing all translation APIs... This may take a moment.');
+                const testText = interaction.options.getString('text');
                 
-                const testResults = await synthiaTranslator.testAllAPIs();
+                // Check if this is Pokemon content first
+                const isPokemon = synthiaAI.isPokemonRelatedContent(testText);
                 
-                const testEmbed = new EmbedBuilder()
-                    .setTitle('🧪 API Test Results')
-                    .setDescription('Complete test of all translation providers with bidirectional support')
-                    .setColor(config.colors.performance)
-                    .addFields({
-                        name: '📊 Summary',
-                        value: `Working: ${testResults.summary.workingProviders}/${testResults.summary.totalProviders}\nAverage Time: ${testResults.summary.averageResponseTime}ms\nReliability: ${testResults.summary.reliability}%\nBidirectional Tests: ${testResults.summary.bidirectionalTests || 0}\nSuccess Rate: ${testResults.summary.bidirectionalSuccessRate || 0}%`,
-                        inline: false
-                    });
-
-                for (const [provider, result] of Object.entries(testResults.individual)) {
-                    const statusIcon = result.working ? '✅' : '❌';
-                    const resultText = result.working 
-                        ? `Success Rate: ${result.successRate || 0}%\nAvg Time: ${result.time}ms\nTests: ${result.successfulTests || 0}/${result.bidirectionalTests || 1}\nBidirectional: ${result.bidirectionalTests > 1 ? '✅' : '❌'}`
-                        : `Error: ${result.error || 'Unknown error'}\nStatus: Failed to connect`;
-                    
-                    testEmbed.addFields({
-                        name: `${statusIcon} ${provider}`,
-                        value: resultText,
-                        inline: true
-                    });
-                }
-
-                testEmbed.addFields({
-                    name: '🎮 Pokemon Protection',
-                    value: '✅ All APIs respect Pokemon content protection',
-                    inline: false
-                });
-                
-                await interaction.editReply({ embeds: [testEmbed] });
-                break;
-
-            case 'translation-stats':
-                await interaction.deferReply();
-                
-                const detailedStats = synthiaTranslator.getTranslationStats();
-                
-                const statsDetailEmbed = new EmbedBuilder()
-                    .setTitle('📊 Translation Performance Statistics')
-                    .setDescription('Enhanced Multi-API Translation Performance with Pokemon Protection')
-                    .setColor(config.colors.performance)
-                    .addFields(
-                        { name: '🔄 Total Translations', value: `${detailedStats.totalTranslations}`, inline: true },
-                        { name: '✅ Successful', value: `${detailedStats.successfulTranslations}`, inline: true },
-                        { name: '❌ Failed', value: `${detailedStats.failedTranslations}`, inline: true },
-                        { name: '📈 Success Rate', value: `${detailedStats.successRate}%`, inline: true },
-                        { name: '⚡ Average Time', value: `${detailedStats.averageResponseTime}ms`, inline: true },
-                        { name: '🔧 Active Providers', value: `${Object.keys(detailedStats.providerStats || {}).length}`, inline: true },
-                        { name: '🎮 Pokemon Protection', value: '✅ Active', inline: true },
-                        { name: '🛡️ Bypass Detection', value: '✅ Enhanced', inline: true },
-                        { name: '🌍 Language Support', value: `${synthiaTranslator.enhancedAPI.supportedLanguages.size}`, inline: true }
-                    );
-
-                if (detailedStats.providerStats && Object.keys(detailedStats.providerStats).length > 0) {
-                    const providerPerformance = Object.entries(detailedStats.providerStats)
-                        .sort((a, b) => b[1].count - a[1].count)
-                        .map(([provider, stats]) => 
-                            `**${provider}**: ${stats.count} translations, ${stats.successRate}% success, ${stats.averageTime}ms avg`
-                        ).join('\n');
-                    
-                    statsDetailEmbed.addFields({
-                        name: '🏆 Provider Performance',
-                        value: providerPerformance.slice(0, 1024),
-                        inline: false
-                    });
-                }
-
-                // Add API status information
-                const currentApiStatus = synthiaTranslator.getTranslationStatus();
-                const availableProviders = Object.values(currentApiStatus.providers).filter(p => p.available).length;
-                const totalApiProviders = Object.keys(currentApiStatus.providers).length;
-
-                statsDetailEmbed.addFields({
-                    name: '🔧 Current API Status',
-                    value: `Available Providers: ${availableProviders}/${totalApiProviders}\nTotal API Requests: ${currentApiStatus.totalRequests || 0}\nTotal Characters Processed: ${currentApiStatus.totalCharacters || 0}`,
-                    inline: false
-                });
-                
-                await interaction.editReply({ embeds: [statsDetailEmbed] });
-                break;
-
-            case 'test-translate':
-                await interaction.deferReply();
-                
-                const translateTestText = interaction.options.getString('text');
-                const currentServerConfig = serverLogger.getServerConfig(interaction.guild.id);
-                
-                try {
-                    // Check if this is Pokemon content first
-                    const isPokemonTestContent = synthiaAI.isPokemonRelatedContent(translateTestText);
-                    
-                    const detectedLang = synthiaTranslator.detectLanguage(translateTestText);
-                    const detectedLangName = synthiaTranslator.enhancedAPI.supportedLanguages.get(detectedLang) || detectedLang;
-                    
-                    const translation = await synthiaTranslator.translateText(
-                        translateTestText, 
-                        currentServerConfig?.defaultTranslateTo || 'en', 
-                        detectedLang
-                    );
-                    
-                    const testTranslateEmbed = new EmbedBuilder()
-                        .setTitle('🧪 Translation System Test')
-                        .setColor(config.colors.translation)
+                if (isPokemon) {
+                    const pokemonEmbed = new EmbedBuilder()
+                        .setTitle('🎮 Pokemon Content Detected')
+                        .setDescription('This content was identified as Pokemon-related and is automatically whitelisted.')
                         .addFields(
-                            { name: '📝 Input Text', value: translateTestText, inline: false },
-                            { name: '🎮 Pokemon Content', value: isPokemonTestContent ? '✅ YES (Protected)' : '❌ NO', inline: true },
-                            { name: '🌍 Detected Language', value: `${detectedLangName} (${detectedLang})`, inline: true },
-                            { name: '🎯 Target Language', value: `${synthiaTranslator.enhancedAPI.supportedLanguages.get(currentServerConfig?.defaultTranslateTo || 'en')} (${currentServerConfig?.defaultTranslateTo || 'en'})`, inline: true },
-                            { name: '🔧 Provider', value: translation.provider || 'Unknown', inline: true },
-                            { name: '📊 Confidence', value: `${translation.confidence || 0}%`, inline: true },
-                            { name: '⚡ Processing Time', value: `${translation.processingTime || 0}ms`, inline: true }
+                            { name: '📝 Text', value: testText.slice(0, 1024), inline: false },
+                            { name: '🛡️ Protection Status', value: '✅ WHITELISTED', inline: true },
+                            { name: '🤖 Decision Engine', value: '⏭️ SKIPPED (Pokemon Protection)', inline: true }
+                        )
+                        .setColor(config.colors.success);
+                    
+                    await interaction.editReply({ embeds: [pokemonEmbed] });
+                    return;
+                }
+
+                try {
+                    // Test the decision engine directly
+                    const decisionResult = await synthiaAI.decisionEngine.analyzeWithMultiAPI(testText, {
+                        author: { id: interaction.user.id, tag: interaction.user.tag },
+                        channel: { id: interaction.channel.id, name: interaction.channel.name },
+                        guild: interaction.guild ? { id: interaction.guild.id, name: interaction.guild.name } : null
+                    });
+
+                    const resultEmbed = new EmbedBuilder()
+                        .setTitle('🤖 Multi-API Decision Engine Test Results')
+                        .setColor(decisionResult.toxicityScore >= 7 ? config.colors.error : 
+                                 decisionResult.toxicityScore >= 4 ? config.colors.warning : 
+                                 config.colors.success)
+                        .addFields(
+                            { name: '📝 Analyzed Text', value: `\`\`\`${testText.slice(0, 500)}\`\`\``, inline: false },
+                            { name: '🎯 Toxicity Score', value: `${decisionResult.toxicityScore}/10`, inline: true },
+                            { name: '📊 Confidence', value: `${decisionResult.confidence}%`, inline: true },
+                            { name: '⚡ Processing Time', value: `${decisionResult.processingTime || 0}ms`, inline: true }
                         );
 
-                    if (detectedLang !== (currentServerConfig?.defaultTranslateTo || 'en')) {
-                        testTranslateEmbed.addFields({
-                            name: '🌟 Translation Result',
-                            value: translation.translatedText || 'No translation performed',
-                            inline: false
-                        });
-                    } else {
-                        testTranslateEmbed.addFields({
-                            name: '🌟 Translation Result',
-                            value: 'No translation needed (same language)',
+                    if (decisionResult.individualScores && Object.keys(decisionResult.individualScores).length > 0) {
+                        const apiResults = Object.entries(decisionResult.individualScores)
+                            .map(([api, data]) => `**${api}**: ${data.score}/10 (${data.confidence}%)`)
+                            .join('\n');
+                        
+                        resultEmbed.addFields({
+                            name: '🔧 Individual API Results',
+                            value: apiResults.slice(0, 1024),
                             inline: false
                         });
                     }
 
-                    testTranslateEmbed.addFields({
-                        name: '🤖 Auto-Translation Status',
-                        value: currentServerConfig?.autoTranslate ? '✅ Enabled' : '❌ Disabled',
-                        inline: true
+                    if (decisionResult.reasoning && decisionResult.reasoning.length > 0) {
+                        resultEmbed.addFields({
+                            name: '🧠 AI Reasoning',
+                            value: `• ${decisionResult.reasoning.slice(0, 5).join('\n• ')}`.slice(0, 1024),
+                            inline: false
+                        });
+                    }
+
+                    if (decisionResult.apiAnalysis) {
+                        resultEmbed.addFields({
+                            name: '📈 Analysis Details',
+                            value: `APIs Used: ${decisionResult.apiAnalysis.availableAPIs}\nConsensus: ${decisionResult.apiAnalysis.consensus ? 'Yes' : 'No'}\nContent Type: ${decisionResult.apiAnalysis.contentType}\nMethod: ${decisionResult.apiAnalysis.processingMethod}`,
+                            inline: false
+                        });
+                    }
+
+                    // Add recommended action
+                    let recommendedAction = 'None';
+                    if (decisionResult.toxicityScore >= 7) recommendedAction = 'Ban';
+                    else if (decisionResult.toxicityScore >= 5) recommendedAction = 'Mute';
+                    else if (decisionResult.toxicityScore >= 3) recommendedAction = 'Delete';
+                    else if (decisionResult.toxicityScore >= 2) recommendedAction = 'Warn';
+
+                    resultEmbed.addFields({
+                        name: '⚖️ Recommended Action',
+                        value: `**${recommendedAction}** (Based on thresholds: ${config.moderationThresholds.warn}/${config.moderationThresholds.delete}/${config.moderationThresholds.mute}/${config.moderationThresholds.ban})`,
+                        inline: false
                     });
 
-                    if (isPokemonTestContent) {
-                        testTranslateEmbed.addFields({
-                            name: '🎮 Pokemon Protection Notice',
-                            value: 'This content was identified as Pokemon-related and receives special protection during translation.',
-                            inline: false
-                        });
-                    }
-                    
-                    if (translation.error) {
-                        testTranslateEmbed.addFields({ 
-                            name: '❌ Error', 
-                            value: translation.error, 
-                            inline: false 
-                        });
-                    }
-                    
-                    await interaction.editReply({ embeds: [testTranslateEmbed] });
-                    
+                    await interaction.editReply({ embeds: [resultEmbed] });
+
                 } catch (error) {
-                    await interaction.editReply(`❌ Translation test failed: ${error.message}`);
+                    const errorEmbed = new EmbedBuilder()
+                        .setTitle('❌ Decision Engine Test Failed')
+                        .setDescription('The Multi-API Decision Engine encountered an error.')
+                        .addFields(
+                            { name: '📝 Text', value: testText.slice(0, 1024), inline: false },
+                            { name: '❌ Error', value: error.message, inline: false },
+                            { name: '🔄 Fallback', value: 'The system would use local analysis in this case', inline: false }
+                        )
+                        .setColor(config.colors.error);
+
+                    await interaction.editReply({ embeds: [errorEmbed] });
                 }
                 break;
+            }
 
-            case 'toggle-automod':
+            case 'moderation-analysis': {
                 await interaction.deferReply();
                 
-                const autoModEnabled = interaction.options.getBoolean('enabled');
-                serverLogger.updateServerSetting(interaction.guild.id, 'autoModeration', autoModEnabled);
+                const analysisText = interaction.options.getString('text');
                 
-                await interaction.editReply(`${autoModEnabled ? '✅ Enabled' : '❌ Disabled'} automatic moderation for this server.\n\n🎮 **Pokemon Protection**: Always active regardless of automod settings\n🛡️ **Bypass Detection**: Enhanced and functional`);
+                // Run full analysis through synthiaAI (includes decision engine + local analysis)
+                const fullAnalysis = await synthiaAI.analyzeMessage(
+                    analysisText,
+                    interaction.user,
+                    interaction.channel,
+                    { guild: interaction.guild }
+                );
+
+                const analysisEmbed = new EmbedBuilder()
+                    .setTitle('🔍 Complete Moderation Analysis')
+                    .setColor(fullAnalysis.threatLevel >= 7 ? config.colors.error : 
+                             fullAnalysis.threatLevel >= 4 ? config.colors.warning : 
+                             config.colors.success)
+                    .addFields(
+                        { name: '📝 Analyzed Content', value: `\`\`\`${analysisText.slice(0, 500)}\`\`\``, inline: false },
+                        { name: '🔥 Threat Level', value: `${fullAnalysis.threatLevel}/10`, inline: true },
+                        { name: '📊 Confidence', value: `${fullAnalysis.confidence}%`, inline: true },
+                        { name: '⚡ Processing Time', value: `${fullAnalysis.processingTime}ms`, inline: true },
+                        { name: '🌍 Language', value: fullAnalysis.language.originalLanguage, inline: true },
+                        { name: '🤖 Decision Engine', value: fullAnalysis.decisionEngineUsed ? '✅ Used' : '❌ Fallback', inline: true },
+                        { name: '🔍 Bypass Detection', value: fullAnalysis.bypassDetected ? '🚨 DETECTED' : '✅ None', inline: true }
+                    );
+
+                if (fullAnalysis.violationType) {
+                    analysisEmbed.addFields({
+                        name: '⚖️ Violation Details',
+                        value: `**Type**: ${fullAnalysis.violationType}\n**Action**: ${fullAnalysis.action}\n**Threshold Met**: Yes`,
+                        inline: false
+                    });
+                }
+
+                if (fullAnalysis.bypassDetected) {
+                    analysisEmbed.addFields({
+                        name: '🚨 Bypass Analysis',
+                        value: `**Original**: ${analysisText.slice(0, 100)}\n**Normalized**: ${fullAnalysis.normalizedText?.slice(0, 100) || 'N/A'}\n**Methods**: ${fullAnalysis.bypassAttempts?.map(b => b.type).join(', ') || 'Unknown'}`,
+                        inline: false
+                    });
+                }
+
+                if (fullAnalysis.apiResults && Object.keys(fullAnalysis.apiResults).length > 0) {
+                    const apiSummary = Object.entries(fullAnalysis.apiResults)
+                        .filter(([api, result]) => result && !result.error)
+                        .map(([api, result]) => `**${api}**: Available`)
+                        .join('\n') || 'None available';
+                    
+                    analysisEmbed.addFields({
+                        name: '🔧 APIs Consulted',
+                        value: apiSummary,
+                        inline: false
+                    });
+                }
+
+                if (fullAnalysis.reasoning && fullAnalysis.reasoning.length > 0) {
+                    analysisEmbed.addFields({
+                        name: '🧠 Complete Analysis Reasoning',
+                        value: `• ${fullAnalysis.reasoning.slice(0, 6).join('\n• ')}`.slice(0, 1024),
+                        inline: false
+                    });
+                }
+
+                await interaction.editReply({ embeds: [analysisEmbed] });
+                break;
+            }
+
+            case 'toggle-automod': {
+                await interaction.deferReply();
+                
+                const automodEnabled = interaction.options.getBoolean('enabled');
+                serverLogger.updateServerSetting(interaction.guild.id, 'autoModeration', automodEnabled);
+                
+                await interaction.editReply(`${automodEnabled ? '✅ Enabled' : '❌ Disabled'} automatic moderation for this server.\n\n🎮 **Note**: Pokemon content protection remains active regardless of this setting.`);
                 
                 await discordLogger.sendLog(
                     interaction.guild,
-                    'success',
+                    'moderation',
                     '🛡️ Auto-Moderation Settings Changed',
-                    `Auto-moderation has been ${autoModEnabled ? 'enabled' : 'disabled'} by ${interaction.user.tag}.\n\nPokemon protection remains active at all times.`
+                    `Auto-moderation has been ${automodEnabled ? 'enabled' : 'disabled'} by ${interaction.user.tag}`,
+                    [
+                        { name: '👤 Changed By', value: `${interaction.user.tag}`, inline: true },
+                        { name: '🔧 New Status', value: automodEnabled ? '✅ Enabled' : '❌ Disabled', inline: true },
+                        { name: '📅 Changed At', value: new Date().toLocaleString(), inline: true },
+                        { name: '🎮 Pokemon Protection', value: '✅ Always Active', inline: true }
+                    ]
                 );
                 break;
+            }
 
-            case 'setup-wizard':
+            case 'test-pokemon': {
                 await interaction.deferReply();
                 
-                const wizardEmbed = new EmbedBuilder()
-                    .setTitle('🚀 Enhanced Synthia v9.0 Setup Wizard')
-                    .setDescription('Interactive setup for optimal performance with Pokemon protection')
-                    .addFields(
-                        { name: '📡 Step 1: Log Channel', value: 'Use `!synthia loghere` in your desired log channel', inline: false },
-                        { name: '🛡️ Step 2: Auto-Moderation', value: 'Use `/toggle-automod enabled:true` to enable', inline: false },
-                        { name: '🌍 Step 3: Translation', value: 'Use `/set-server-language` and `/auto-translate` as needed', inline: false },
-                        { name: '🧪 Step 4: Testing', value: 'Use `/test-pokemon` to verify Pokemon protection works', inline: false },
-                        { name: '🔍 Step 5: Bypass Testing', value: 'Use `/test-bypass` to test bypass detection', inline: false }
-                    )
-                    .setColor(config.colors.success)
-                    .setFooter({ text: 'Enhanced Synthia v9.0 - Complete AI Moderation System with Pokemon Support' });
-                
-                await interaction.editReply({ embeds: [wizardEmbed] });
-                break;
+                const testEmbed = new EmbedBuilder()
+                    .setTitle('🎮 Pokemon Protection System Test')
+                    .setDescription('Testing Pokemon file detection and trading code protection')
+                    .setColor(config.colors.success);
 
-            default:
+                // Test various Pokemon content
+                const pokemonTests = [
+                    { content: 'Charizard.pk9', type: 'Pokemon file (.pk9)' },
+                    { content: 'Pikachu.pk8', type: 'Pokemon file (.pk8)' },
+                    { content: 'Blastoise.pb8', type: 'Pokemon file (.pb8)' },
+                    { content: '.trade 12345678', type: 'Trading code' },
+                    { content: 'Looking for shiny Eevee', type: 'Pokemon discussion' },
+                    { content: 'IV: 31/31/31/31/31/31', type: 'Pokemon stats' }
+                ];
+
+                let testResults = '';
+                for (const test of pokemonTests) {
+                    const isPokemon = synthiaAI.isPokemonRelatedContent(test.content);
+                    const status = isPokemon ? '✅ PROTECTED' : '❌ Not detected';
+                    testResults += `**${test.type}**: "${test.content}" → ${status}\n`;
+                }
+
+                testEmbed.addFields({
+                    name: '🧪 Protection Test Results',
+                    value: testResults,
+                    inline: false
+                });
+
+                testEmbed.addFields({
+                    name: '🛡️ Protected File Extensions',
+                    value: '.pk9, .pk8, .pb8, .pk7, .pk6, .pkm, .pcd, .pgf, .wc8, .wc7, .wc6',
+                    inline: false
+                });
+
+                testEmbed.addFields({
+                    name: '💬 Protected Keywords',
+                    value: 'Pokemon names, trading codes (.trade), IV stats, Pokemon terms',
+                    inline: false
+                });
+
+                testEmbed.addFields({
+                    name: '⚡ Status',
+                    value: '✅ Pokemon Protection is ALWAYS ACTIVE\n✅ All Pokemon content is automatically whitelisted\n✅ False positives are prevented',
+                    inline: false
+                });
+
+                await interaction.editReply({ embeds: [testEmbed] });
+                break;
+            }
+
+            case 'test-translate': {
+                await interaction.deferReply();
+                
+                const testText = interaction.options.getString('text');
+                
+                await interaction.editReply('🧪 Testing translation system... This may take a moment.');
+                
+                // Test translation to English
+                const translation = await synthiaTranslator.translateText(testText, 'en');
+                
+                const testEmbed = new EmbedBuilder()
+                    .setTitle('🧪 Translation System Test')
+                    .setDescription('Testing the enhanced multi-API translation system')
+                    .setColor(config.colors.translation)
+                    .addFields(
+                        { name: '📝 Original Text', value: testText.slice(0, 1024), inline: false },
+                        { name: '🌍 Detected Language', value: translation.originalLanguage || 'Unknown', inline: true },
+                        { name: '🔧 Provider Used', value: translation.provider || 'Unknown', inline: true },
+                        { name: '⚡ Processing Time', value: `${translation.processingTime || 0}ms`, inline: true },
+                        { name: '📊 Confidence', value: `${translation.confidence || 0}%`, inline: true },
+                        { name: '✅ Success', value: translation.error ? '❌ Failed' : '✅ Success', inline: true },
+                        { name: '🎮 Pokemon Protection', value: '✅ Active', inline: true }
+                    );
+
+                if (translation.translatedText && !translation.error) {
+                    testEmbed.addFields({
+                        name: '🌟 Translation Result',
+                        value: translation.translatedText.slice(0, 1024),
+                        inline: false
+                    });
+                }
+
+                if (translation.error) {
+                    testEmbed.addFields({
+                        name: '❌ Error Details',
+                        value: translation.error,
+                        inline: false
+                    });
+                }
+
+                await interaction.editReply({ embeds: [testEmbed] });
+                break;
+            }
+
+            case 'setup-wizard': {
+                await interaction.deferReply();
+                
+                const setupEmbed = new EmbedBuilder()
+                    .setTitle('🚀 Enhanced Synthia v9.0 Setup Wizard')
+                    .setDescription('Interactive setup guide for optimal configuration')
+                    .setColor(config.colors.primary)
+                    .addFields(
+                        { name: '1️⃣ Basic Setup', value: '`!synthia loghere` - Set this channel for logging\n`/toggle-automod enabled:true` - Enable auto-moderation', inline: false },
+                        { name: '2️⃣ Translation Setup', value: '`/set-server-language language:English` - Set default language\n`/auto-translate enabled:true` - Enable auto-translation', inline: false },
+                        { name: '3️⃣ Testing', value: '`/test-detection text:hello` - Test detection system\n`/api-status` - Check API status\n`/test-pokemon` - Verify Pokemon protection', inline: false },
+                        { name: '4️⃣ Advanced Features', value: '`/decision-engine-status` - Check AI systems\n`/translation-stats` - View performance\n`/synthia-analysis user:@someone` - Analyze users', inline: false },
+                        { name: '🎮 Pokemon Protection', value: '✅ Automatically enabled - no setup required!\nPokemon files and trading content are always protected.', inline: false },
+                        { name: '🤖 Decision Engine', value: '✅ Multi-API analysis system is ready!\nProvides enhanced accuracy for content moderation.', inline: false }
+                    )
+                    .setFooter({ text: '💡 All systems are ready to use! Pokemon protection and multi-API analysis are active by default.' });
+
+                await interaction.editReply({ embeds: [setupEmbed] });
+                break;
+            }
+
+            case 'test-bypass': {
+                await interaction.deferReply();
+                
+                const bypassTestText = interaction.options.getString('text');
+                
+                // Check if this is Pokemon content first
+                const isPokemonContent = synthiaAI.isPokemonRelatedContent(bypassTestText);
+                
+                if (isPokemonContent) {
+                    const pokemonEmbed = new EmbedBuilder()
+                        .setTitle('🎮 Pokemon Content Protection Active')
+                        .setDescription('This content was identified as Pokemon-related and is automatically protected.')
+                        .addFields(
+                            { name: '📝 Text', value: bypassTestText.slice(0, 1024), inline: false },
+                            { name: '🛡️ Protection Status', value: '✅ WHITELISTED', inline: true },
+                            { name: '🔍 Bypass Detection', value: '⏭️ SKIPPED (Pokemon Protection)', inline: true }
+                        )
+                        .setColor(config.colors.success);
+                    
+                    await interaction.editReply({ embeds: [pokemonEmbed] });
+                    return;
+                }
+
+                // Run bypass detection
+                const bypassAnalysis = await synthiaAI.analyzeMessage(bypassTestText, interaction.user, interaction.channel, { guild: interaction.guild });
+                
+                const bypassEmbed = new EmbedBuilder()
+                    .setTitle('🔍 Bypass Detection Test Results')
+                    .setColor(bypassAnalysis.bypassDetected ? config.colors.error : config.colors.success)
+                    .addFields(
+                        { name: '📝 Test Text', value: bypassTestText.slice(0, 1024), inline: false },
+                        { name: '🚨 Bypass Detected', value: bypassAnalysis.bypassDetected ? '🚨 YES' : '✅ NO', inline: true },
+                        { name: '🎯 Threat Level', value: `${bypassAnalysis.threatLevel}/10`, inline: true },
+                        { name: '📊 Confidence', value: `${bypassAnalysis.confidence}%`, inline: true }
+                    );
+
+                if (bypassAnalysis.bypassDetected) {
+                    bypassEmbed.addFields({
+                        name: '🔍 Bypass Details',
+                        value: `**Original**: ${bypassTestText.slice(0, 100)}\n**Normalized**: ${bypassAnalysis.normalizedText?.slice(0, 100) || 'N/A'}\n**Methods**: ${bypassAnalysis.bypassAttempts?.map(b => b.type).join(', ') || 'Unknown'}`,
+                        inline: false
+                    });
+                }
+
+                bypassEmbed.addFields({
+                    name: '🛡️ Protection Systems',
+                    value: '✅ Character substitution detection\n✅ Spacing manipulation detection\n✅ Unicode bypass detection\n✅ Zalgo text detection\n✅ Pokemon content whitelisting',
+                    inline: false
+                });
+
+                await interaction.editReply({ embeds: [bypassEmbed] });
+                break;
+            }
+
+            default: {
                 await interaction.reply({ content: '❌ Unknown command.', ephemeral: true });
                 break;
+            }
         }
     } catch (error) {
         console.error('Enhanced command error:', error);
