@@ -1,18 +1,13 @@
-// Cache Manager v10.0 - cache/cache-manager.js
-const NodeCache = require('node-cache');
-const logger = require('../logging/enhanced-logger.js');
+const Redis = require('ioredis');
+const config = require('../config/enhanced-config.js');
+const Logger = require('../logging/enhanced-logger.js');
 
 class CacheManager {
     constructor() {
-        this.cache = new NodeCache({
-            stdTTL: 3600, // 1 hour default TTL
-            checkperiod: 600, // Check for expired keys every 10 minutes
-            useClones: false,
-            deleteOnExpire: true,
-            enableLegacyCallbacks: false,
-            maxKeys: 10000
-        });
-        
+        this.redis = null;
+        this.logger = new Logger('CacheManager');
+        this.connected = false;
+        this.keyPrefix = 'synthia:';
         this.stats = {
             hits: 0,
             misses: 0,
@@ -20,281 +15,495 @@ class CacheManager {
             deletes: 0,
             errors: 0
         };
-        
-        this.setupEventHandlers();
-        logger.info('🗄️ Cache Manager v10.0 initialized');
     }
 
     async initialize() {
-        // Any async initialization if needed
-        logger.info('✅ Cache Manager initialized successfully');
+        try {
+            this.logger.info('Initializing Redis cache...');
+            
+            this.redis = new Redis({
+                host: config.redis.host,
+                port: config.redis.port,
+                password: config.redis.password,
+                db: config.redis.db,
+                retryDelayOnFailover: config.redis.retryDelayOnFailover,
+                maxRetriesPerRequest: config.redis.maxRetriesPerRequest,
+                lazyConnect: config.redis.lazyConnect,
+                keyPrefix: this.keyPrefix
+            });
+
+            this.setupEventHandlers();
+            await this.redis.connect();
+            
+            this.connected = true;
+            this.logger.info('Redis cache initialized successfully');
+            
+        } catch (error) {
+            this.logger.error('Redis cache initialization failed:', error);
+            throw error;
+        }
     }
 
     setupEventHandlers() {
-        this.cache.on('set', (key, value) => {
-            this.stats.sets++;
-            logger.debug(`Cache SET: ${key}`);
+        this.redis.on('connect', () => {
+            this.logger.info('Redis connection established');
+            this.connected = true;
         });
 
-        this.cache.on('del', (key, value) => {
-            this.stats.deletes++;
-            logger.debug(`Cache DELETE: ${key}`);
+        this.redis.on('disconnect', () => {
+            this.logger.warn('Redis connection lost');
+            this.connected = false;
         });
 
-        this.cache.on('expired', (key, value) => {
-            logger.debug(`Cache EXPIRED: ${key}`);
+        this.redis.on('error', (error) => {
+            this.logger.error('Redis error:', error);
+            this.stats.errors++;
         });
 
-        this.cache.on('flush', () => {
-            logger.debug('Cache FLUSHED');
+        this.redis.on('reconnecting', () => {
+            this.logger.info('Reconnecting to Redis...');
         });
     }
 
-    // Standard cache operations
+    // Basic cache operations
     async get(key) {
         try {
-            const value = this.cache.get(key);
-            if (value !== undefined) {
+            const value = await this.redis.get(key);
+            
+            if (value !== null) {
                 this.stats.hits++;
-                logger.debug(`Cache HIT: ${key}`);
-                return value;
+                return JSON.parse(value);
             } else {
                 this.stats.misses++;
-                logger.debug(`Cache MISS: ${key}`);
                 return null;
             }
         } catch (error) {
+            this.logger.error(`Cache get error for key ${key}:`, error);
             this.stats.errors++;
-            logger.error(`Cache GET error for key ${key}:`, error);
             return null;
         }
     }
 
-    async set(key, value, ttl = null) {
+    async set(key, value, ttl = config.cache.ttl) {
         try {
-            const success = this.cache.set(key, value, ttl || 3600);
-            if (success) {
-                this.stats.sets++;
-                logger.debug(`Cache SET successful: ${key}`);
+            const serializedValue = JSON.stringify(value);
+            
+            if (ttl > 0) {
+                await this.redis.setex(key, ttl, serializedValue);
+            } else {
+                await this.redis.set(key, serializedValue);
             }
-            return success;
+            
+            this.stats.sets++;
+            return true;
         } catch (error) {
+            this.logger.error(`Cache set error for key ${key}:`, error);
             this.stats.errors++;
-            logger.error(`Cache SET error for key ${key}:`, error);
             return false;
         }
     }
 
     async del(key) {
         try {
-            const deleted = this.cache.del(key);
-            if (deleted > 0) {
-                this.stats.deletes++;
-                logger.debug(`Cache DELETE successful: ${key}`);
-            }
-            return deleted > 0;
+            const result = await this.redis.del(key);
+            this.stats.deletes++;
+            return result > 0;
         } catch (error) {
+            this.logger.error(`Cache delete error for key ${key}:`, error);
             this.stats.errors++;
-            logger.error(`Cache DELETE error for key ${key}:`, error);
             return false;
         }
     }
 
-    async has(key) {
+    async exists(key) {
         try {
-            return this.cache.has(key);
+            return await this.redis.exists(key) === 1;
         } catch (error) {
-            this.stats.errors++;
-            logger.error(`Cache HAS error for key ${key}:`, error);
+            this.logger.error(`Cache exists error for key ${key}:`, error);
             return false;
         }
     }
 
-    async flush() {
+    async expire(key, ttl) {
         try {
-            this.cache.flushAll();
-            logger.info('Cache flushed successfully');
-            return true;
+            return await this.redis.expire(key, ttl) === 1;
         } catch (error) {
-            this.stats.errors++;
-            logger.error('Cache FLUSH error:', error);
+            this.logger.error(`Cache expire error for key ${key}:`, error);
             return false;
         }
     }
 
-    // Specialized cache methods for the AI system
-    async cacheMessageAnalysis(messageId, analysis) {
-        const key = `analysis:${messageId}`;
-        return await this.set(key, analysis, 1800); // 30 minutes
+    async ttl(key) {
+        try {
+            return await this.redis.ttl(key);
+        } catch (error) {
+            this.logger.error(`Cache TTL error for key ${key}:`, error);
+            return -1;
+        }
     }
 
-    async getMessageAnalysis(messageId) {
-        const key = `analysis:${messageId}`;
-        return await this.get(key);
-    }
-
-    async cacheTranslation(sourceText, targetLang, translation) {
-        const key = `translation:${this.hashString(sourceText)}:${targetLang}`;
-        return await this.set(key, translation, 3600); // 1 hour
-    }
-
-    async getTranslation(sourceText, targetLang) {
-        const key = `translation:${this.hashString(sourceText)}:${targetLang}`;
-        return await this.get(key);
-    }
-
-    async cacheUserData(userId, data) {
-        const key = `user:${userId}`;
-        return await this.set(key, data, 7200); // 2 hours
-    }
-
-    async getUserData(userId) {
-        const key = `user:${userId}`;
-        return await this.get(key);
-    }
-
-    async cacheGuildConfig(guildId, config) {
-        const key = `guild:${guildId}`;
-        return await this.set(key, config, 14400); // 4 hours
-    }
-
-    async getGuildConfig(guildId) {
-        const key = `guild:${guildId}`;
-        return await this.get(key);
-    }
-
-    // Bulk operations
+    // Advanced cache operations
     async mget(keys) {
         try {
-            const result = this.cache.mget(keys);
-            const hits = Object.keys(result).length;
-            const misses = keys.length - hits;
+            const values = await this.redis.mget(keys);
+            return values.map(value => value ? JSON.parse(value) : null);
+        } catch (error) {
+            this.logger.error('Cache mget error:', error);
+            this.stats.errors++;
+            return keys.map(() => null);
+        }
+    }
+
+    async mset(keyValuePairs, ttl = config.cache.ttl) {
+        try {
+            const pipeline = this.redis.pipeline();
             
-            this.stats.hits += hits;
-            this.stats.misses += misses;
+            for (const [key, value] of keyValuePairs) {
+                const serializedValue = JSON.stringify(value);
+                if (ttl > 0) {
+                    pipeline.setex(key, ttl, serializedValue);
+                } else {
+                    pipeline.set(key, serializedValue);
+                }
+            }
             
-            logger.debug(`Cache MGET: ${hits} hits, ${misses} misses`);
+            await pipeline.exec();
+            this.stats.sets += keyValuePairs.length;
+            return true;
+        } catch (error) {
+            this.logger.error('Cache mset error:', error);
+            this.stats.errors++;
+            return false;
+        }
+    }
+
+    async increment(key, amount = 1) {
+        try {
+            return await this.redis.incrby(key, amount);
+        } catch (error) {
+            this.logger.error(`Cache increment error for key ${key}:`, error);
+            return null;
+        }
+    }
+
+    async decrement(key, amount = 1) {
+        try {
+            return await this.redis.decrby(key, amount);
+        } catch (error) {
+            this.logger.error(`Cache decrement error for key ${key}:`, error);
+            return null;
+        }
+    }
+
+    // List operations
+    async lpush(key, ...values) {
+        try {
+            const serializedValues = values.map(v => JSON.stringify(v));
+            return await this.redis.lpush(key, ...serializedValues);
+        } catch (error) {
+            this.logger.error(`Cache lpush error for key ${key}:`, error);
+            return 0;
+        }
+    }
+
+    async rpush(key, ...values) {
+        try {
+            const serializedValues = values.map(v => JSON.stringify(v));
+            return await this.redis.rpush(key, ...serializedValues);
+        } catch (error) {
+            this.logger.error(`Cache rpush error for key ${key}:`, error);
+            return 0;
+        }
+    }
+
+    async lpop(key) {
+        try {
+            const value = await this.redis.lpop(key);
+            return value ? JSON.parse(value) : null;
+        } catch (error) {
+            this.logger.error(`Cache lpop error for key ${key}:`, error);
+            return null;
+        }
+    }
+
+    async rpop(key) {
+        try {
+            const value = await this.redis.rpop(key);
+            return value ? JSON.parse(value) : null;
+        } catch (error) {
+            this.logger.error(`Cache rpop error for key ${key}:`, error);
+            return null;
+        }
+    }
+
+    async lrange(key, start = 0, end = -1) {
+        try {
+            const values = await this.redis.lrange(key, start, end);
+            return values.map(v => JSON.parse(v));
+        } catch (error) {
+            this.logger.error(`Cache lrange error for key ${key}:`, error);
+            return [];
+        }
+    }
+
+    async llen(key) {
+        try {
+            return await this.redis.llen(key);
+        } catch (error) {
+            this.logger.error(`Cache llen error for key ${key}:`, error);
+            return 0;
+        }
+    }
+
+    // Set operations
+    async sadd(key, ...members) {
+        try {
+            const serializedMembers = members.map(m => JSON.stringify(m));
+            return await this.redis.sadd(key, ...serializedMembers);
+        } catch (error) {
+            this.logger.error(`Cache sadd error for key ${key}:`, error);
+            return 0;
+        }
+    }
+
+    async srem(key, ...members) {
+        try {
+            const serializedMembers = members.map(m => JSON.stringify(m));
+            return await this.redis.srem(key, ...serializedMembers);
+        } catch (error) {
+            this.logger.error(`Cache srem error for key ${key}:`, error);
+            return 0;
+        }
+    }
+
+    async smembers(key) {
+        try {
+            const members = await this.redis.smembers(key);
+            return members.map(m => JSON.parse(m));
+        } catch (error) {
+            this.logger.error(`Cache smembers error for key ${key}:`, error);
+            return [];
+        }
+    }
+
+    async sismember(key, member) {
+        try {
+            const serializedMember = JSON.stringify(member);
+            return await this.redis.sismember(key, serializedMember) === 1;
+        } catch (error) {
+            this.logger.error(`Cache sismember error for key ${key}:`, error);
+            return false;
+        }
+    }
+
+    // Hash operations
+    async hset(key, field, value) {
+        try {
+            const serializedValue = JSON.stringify(value);
+            return await this.redis.hset(key, field, serializedValue);
+        } catch (error) {
+            this.logger.error(`Cache hset error for key ${key}:`, error);
+            return false;
+        }
+    }
+
+    async hget(key, field) {
+        try {
+            const value = await this.redis.hget(key, field);
+            return value ? JSON.parse(value) : null;
+        } catch (error) {
+            this.logger.error(`Cache hget error for key ${key}:`, error);
+            return null;
+        }
+    }
+
+    async hgetall(key) {
+        try {
+            const hash = await this.redis.hgetall(key);
+            const result = {};
+            for (const [field, value] of Object.entries(hash)) {
+                result[field] = JSON.parse(value);
+            }
             return result;
         } catch (error) {
-            this.stats.errors++;
-            logger.error('Cache MGET error:', error);
+            this.logger.error(`Cache hgetall error for key ${key}:`, error);
             return {};
         }
     }
 
-    async mset(keyValuePairs, ttl = null) {
+    async hdel(key, ...fields) {
         try {
-            const success = this.cache.mset(keyValuePairs, ttl || 3600);
-            if (success) {
-                this.stats.sets += Object.keys(keyValuePairs).length;
-                logger.debug(`Cache MSET successful: ${Object.keys(keyValuePairs).length} items`);
-            }
-            return success;
+            return await this.redis.hdel(key, ...fields);
         } catch (error) {
-            this.stats.errors++;
-            logger.error('Cache MSET error:', error);
-            return false;
+            this.logger.error(`Cache hdel error for key ${key}:`, error);
+            return 0;
         }
     }
 
-    // Cache management
+    // Specialized caching methods
+    async cacheMessageAnalysis(messageId, analysis, ttl = config.cache.strategies.messageAnalysis.ttl) {
+        return await this.set(`message_analysis:${messageId}`, analysis, ttl);
+    }
+
+    async getMessageAnalysis(messageId) {
+        return await this.get(`message_analysis:${messageId}`);
+    }
+
+    async cacheUserProfile(userId, profile, ttl = config.cache.strategies.userProfiles.ttl) {
+        return await this.set(`user_profile:${userId}`, profile, ttl);
+    }
+
+    async getUserProfile(userId) {
+        return await this.get(`user_profile:${userId}`);
+    }
+
+    async cacheGuildSettings(guildId, settings, ttl = config.cache.strategies.guildSettings.ttl) {
+        return await this.set(`guild_settings:${guildId}`, settings, ttl);
+    }
+
+    async getGuildSettings(guildId) {
+        return await this.get(`guild_settings:${guildId}`);
+    }
+
+    async cacheTranslation(originalText, sourceLang, targetLang, translation, ttl = config.cache.strategies.translations.ttl) {
+        const key = `translation:${Buffer.from(`${originalText}:${sourceLang}:${targetLang}`).toString('base64')}`;
+        return await this.set(key, translation, ttl);
+    }
+
+    async getTranslation(originalText, sourceLang, targetLang) {
+        const key = `translation:${Buffer.from(`${originalText}:${sourceLang}:${targetLang}`).toString('base64')}`;
+        return await this.get(key);
+    }
+
+    // Rate limiting
+    async checkRateLimit(identifier, limit, window) {
+        try {
+            const key = `rate_limit:${identifier}`;
+            const current = await this.redis.incr(key);
+            
+            if (current === 1) {
+                await this.redis.expire(key, window);
+            }
+            
+            return {
+                allowed: current <= limit,
+                count: current,
+                remaining: Math.max(0, limit - current),
+                resetTime: await this.redis.ttl(key)
+            };
+        } catch (error) {
+            this.logger.error('Rate limit check error:', error);
+            return { allowed: true, count: 0, remaining: 0, resetTime: 0 };
+        }
+    }
+
+    // Session management
+    async createSession(sessionId, data, ttl = 3600) {
+        return await this.set(`session:${sessionId}`, data, ttl);
+    }
+
+    async getSession(sessionId) {
+        return await this.get(`session:${sessionId}`);
+    }
+
+    async destroySession(sessionId) {
+        return await this.del(`session:${sessionId}`);
+    }
+
+    // Pattern-based operations
+    async getKeys(pattern) {
+        try {
+            return await this.redis.keys(pattern);
+        } catch (error) {
+            this.logger.error(`Cache keys error for pattern ${pattern}:`, error);
+            return [];
+        }
+    }
+
+    async deletePattern(pattern) {
+        try {
+            const keys = await this.redis.keys(pattern);
+            if (keys.length > 0) {
+                return await this.redis.del(...keys);
+            }
+            return 0;
+        } catch (error) {
+            this.logger.error(`Cache delete pattern error for ${pattern}:`, error);
+            return 0;
+        }
+    }
+
+    // Maintenance and cleanup
     async cleanup() {
         try {
-            const keys = this.cache.keys();
-            const now = Date.now();
-            let cleaned = 0;
-
-            // Remove expired entries manually (force cleanup)
-            for (const key of keys) {
-                const ttl = this.cache.getTtl(key);
-                if (ttl && ttl < now) {
-                    this.cache.del(key);
-                    cleaned++;
+            this.logger.info('Starting cache cleanup...');
+            
+            // Remove expired keys (Redis handles this automatically, but we can optimize)
+            const expiredKeys = await this.redis.keys('*');
+            let cleanedCount = 0;
+            
+            for (const key of expiredKeys) {
+                const ttl = await this.redis.ttl(key);
+                if (ttl === -2) { // Key doesn't exist
+                    cleanedCount++;
                 }
             }
-
-            if (cleaned > 0) {
-                logger.info(`Cache cleanup: removed ${cleaned} expired entries`);
-            }
-
-            return cleaned;
+            
+            this.logger.info(`Cache cleanup completed. ${cleanedCount} expired keys found.`);
         } catch (error) {
-            this.stats.errors++;
-            logger.error('Cache cleanup error:', error);
-            return 0;
+            this.logger.error('Cache cleanup error:', error);
+        }
+    }
+
+    async flushAll() {
+        try {
+            await this.redis.flushall();
+            this.logger.info('Cache flushed successfully');
+            return true;
+        } catch (error) {
+            this.logger.error('Cache flush error:', error);
+            return false;
         }
     }
 
     // Statistics and monitoring
     getStats() {
-        const cacheStats = this.cache.getStats();
         return {
             ...this.stats,
-            keys: cacheStats.keys,
-            hits: cacheStats.hits,
-            misses: cacheStats.misses,
-            ksize: cacheStats.ksize,
-            vsize: cacheStats.vsize,
-            hitRate: this.stats.hits > 0 ? 
-                Math.round((this.stats.hits / (this.stats.hits + this.stats.misses)) * 100) : 0
+            hitRate: this.stats.hits / (this.stats.hits + this.stats.misses) || 0,
+            connected: this.connected
         };
     }
 
-    async healthCheck() {
+    async getInfo() {
         try {
-            const testKey = 'health_check_test';
-            const testValue = { timestamp: Date.now() };
-            
-            // Test set
-            const setResult = await this.set(testKey, testValue, 60);
-            if (!setResult) {
-                throw new Error('Failed to set test value');
-            }
-            
-            // Test get
-            const getValue = await this.get(testKey);
-            if (!getValue || getValue.timestamp !== testValue.timestamp) {
-                throw new Error('Failed to get test value');
-            }
-            
-            // Test delete
-            const delResult = await this.del(testKey);
-            if (!delResult) {
-                throw new Error('Failed to delete test value');
-            }
+            const info = await this.redis.info();
+            const memory = await this.redis.info('memory');
+            const keyspace = await this.redis.info('keyspace');
             
             return {
-                status: 'healthy',
-                stats: this.getStats(),
-                timestamp: Date.now()
+                info,
+                memory,
+                keyspace,
+                stats: this.getStats()
             };
         } catch (error) {
-            logger.error('Cache health check failed:', error);
-            return {
-                status: 'unhealthy',
-                error: error.message,
-                timestamp: Date.now()
-            };
+            this.logger.error('Failed to get cache info:', error);
+            return null;
         }
     }
 
-    // Utility methods
-    hashString(str) {
-        return require('crypto')
-            .createHash('sha256')
-            .update(str)
-            .digest('hex')
-            .substring(0, 16);
-    }
-
-    // Graceful shutdown
     async disconnect() {
-        try {
-            this.cache.close();
-            logger.info('Cache Manager disconnected successfully');
-        } catch (error) {
-            logger.error('Cache Manager disconnect error:', error);
+        if (this.redis) {
+            this.logger.info('Disconnecting from Redis...');
+            await this.redis.disconnect();
+            this.connected = false;
+            this.logger.info('Redis disconnected');
         }
+    }
+
+    isConnected() {
+        return this.connected;
     }
 }
 
