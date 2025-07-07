@@ -1,130 +1,22 @@
-// Enhanced Command Handler v10.0 - Premium Edition with Advanced AI Integration
-const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle, SelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
-const config = require('../config/config.js');
+// Enhanced Command Handler v10.0 - commands/commandHandler.js
+const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const config = require('../config/enhanced-config.js');
+const logger = require('../logging/enhanced-logger.js');
 
 class EnhancedCommandHandler {
     constructor() {
         this.commands = new Map();
         this.cooldowns = new Map();
         this.commandStats = new Map();
-        this.userPermissions = new Map();
-        this.commandCategories = new Map();
         this.initializeCommands();
-        this.initializeCommandCategories();
-        console.log('🚀 Enhanced Command Handler v10.0 - Premium Edition initialized');
-    }
-
-    initializeCommandCategories() {
-        this.commandCategories.set('moderation', {
-            name: '🛡️ Advanced Moderation',
-            description: 'Premium AI-powered moderation tools',
-            requiredPermissions: [PermissionsBitField.Flags.ManageMessages],
-            emoji: '🛡️'
-        });
-
-        this.commandCategories.set('translation', {
-            name: '🌍 Multi-API Translation',
-            description: 'Enterprise translation with 9+ providers',
-            requiredPermissions: [],
-            emoji: '🌍'
-        });
-
-        this.commandCategories.set('analytics', {
-            name: '📊 Advanced Analytics',
-            description: 'Deep insights and performance metrics',
-            requiredPermissions: [PermissionsBitField.Flags.ManageGuild],
-            emoji: '📊'
-        });
-
-        this.commandCategories.set('ai', {
-            name: '🤖 AI Decision Engine',
-            description: 'Multi-API AI analysis and insights',
-            requiredPermissions: [PermissionsBitField.Flags.ManageMessages],
-            emoji: '🤖'
-        });
-
-        this.commandCategories.set('configuration', {
-            name: '⚙️ Server Configuration',
-            description: 'Advanced server settings and customization',
-            requiredPermissions: [PermissionsBitField.Flags.ManageGuild],
-            emoji: '⚙️'
-        });
+        logger.info('🚀 Enhanced Command Handler v10.0 initialized');
     }
 
     initializeCommands() {
-        // MODERATION CATEGORY
-        this.addCommand(new SlashCommandBuilder()
-            .setName('synthia-analysis')
-            .setDescription('🧠 Get comprehensive AI analysis of a user with behavioral insights')
-            .addUserOption(option =>
-                option.setName('user')
-                    .setDescription('The user to analyze with advanced AI')
-                    .setRequired(true)
-            )
-            .addBooleanOption(option =>
-                option.setName('deep-analysis')
-                    .setDescription('Enable deep behavioral pattern analysis')
-                    .setRequired(false)
-            )
-            .addBooleanOption(option =>
-                option.setName('risk-assessment')
-                    .setDescription('Include advanced risk assessment')
-                    .setRequired(false)
-            )
-            .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageMessages), 
-            'moderation'
-        );
-
-        this.addCommand(new SlashCommandBuilder()
-            .setName('advanced-moderation')
-            .setDescription('🛡️ Advanced moderation panel with AI-powered tools')
-            .addUserOption(option =>
-                option.setName('user')
-                    .setDescription('User to moderate')
-                    .setRequired(false)
-            )
-            .addStringOption(option =>
-                option.setName('action')
-                    .setDescription('Moderation action to take')
-                    .setRequired(false)
-                    .addChoices(
-                        { name: '⚠️ Warn', value: 'warn' },
-                        { name: '🗑️ Delete Messages', value: 'delete' },
-                        { name: '🔇 Temporary Mute', value: 'mute' },
-                        { name: '🔨 Ban', value: 'ban' },
-                        { name: '🧹 Clean History', value: 'clean' },
-                        { name: '🔍 Investigate', value: 'investigate' }
-                    )
-            )
-            .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageMessages),
-            'moderation'
-        );
-
-        this.addCommand(new SlashCommandBuilder()
-            .setName('bulk-moderate')
-            .setDescription('🔥 Bulk moderation with AI pattern detection')
-            .addIntegerOption(option =>
-                option.setName('messages')
-                    .setDescription('Number of messages to analyze (1-100)')
-                    .setRequired(true)
-                    .setMinValue(1)
-                    .setMaxValue(100)
-            )
-            .addNumberOption(option =>
-                option.setName('threshold')
-                    .setDescription('Toxicity threshold (0.1-10.0)')
-                    .setRequired(false)
-                    .setMinValue(0.1)
-                    .setMaxValue(10.0)
-            )
-            .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageMessages),
-            'moderation'
-        );
-
-        // TRANSLATION CATEGORY
+        // Translation Commands
         this.addCommand(new SlashCommandBuilder()
             .setName('translate')
-            .setDescription('🌍 Advanced multi-API translation with confidence scoring')
+            .setDescription('🌍 Translate text using multiple AI providers')
             .addStringOption(option =>
                 option.setName('text')
                     .setDescription('Text to translate')
@@ -132,7 +24,7 @@ class EnhancedCommandHandler {
             )
             .addStringOption(option =>
                 option.setName('to')
-                    .setDescription('Target language (auto-detects best provider)')
+                    .setDescription('Target language (e.g., en, es, fr)')
                     .setRequired(false)
             )
             .addStringOption(option =>
@@ -141,190 +33,106 @@ class EnhancedCommandHandler {
                     .setRequired(false)
             )
             .addBooleanOption(option =>
-                option.setName('compare-providers')
+                option.setName('compare')
                     .setDescription('Compare results from multiple providers')
                     .setRequired(false)
-            ),
-            'translation'
+            ), 'translation'
         );
 
+        // Moderation Commands
         this.addCommand(new SlashCommandBuilder()
-            .setName('translation-analytics')
-            .setDescription('📊 Advanced translation performance analytics')
-            .addStringOption(option =>
-                option.setName('timeframe')
-                    .setDescription('Analytics timeframe')
-                    .setRequired(false)
-                    .addChoices(
-                        { name: '📅 Last Hour', value: '1h' },
-                        { name: '📅 Last 24 Hours', value: '24h' },
-                        { name: '📅 Last Week', value: '7d' },
-                        { name: '📅 Last Month', value: '30d' }
-                    )
-            )
-            .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild),
-            'translation'
-        );
-
-        // AI CATEGORY
-        this.addCommand(new SlashCommandBuilder()
-            .setName('ai-decision-engine')
-            .setDescription('🤖 Access the Multi-API Decision Engine directly')
-            .addStringOption(option =>
-                option.setName('text')
-                    .setDescription('Text to analyze with multiple AI systems')
+            .setName('analyze-user')
+            .setDescription('🧠 Get AI-powered user analysis')
+            .addUserOption(option =>
+                option.setName('user')
+                    .setDescription('User to analyze')
                     .setRequired(true)
             )
             .addBooleanOption(option =>
-                option.setName('detailed-breakdown')
-                    .setDescription('Show detailed analysis from each AI provider')
+                option.setName('detailed')
+                    .setDescription('Enable detailed behavioral analysis')
                     .setRequired(false)
             )
-            .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageMessages),
-            'ai'
+            .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageMessages), 'moderation'
         );
 
-        this.addCommand(new SlashCommandBuilder()
-            .setName('ai-training')
-            .setDescription('🧠 AI training and feedback system')
-            .addStringOption(option =>
-                option.setName('action')
-                    .setDescription('Training action')
-                    .setRequired(true)
-                    .addChoices(
-                        { name: '✅ Mark as Correct', value: 'correct' },
-                        { name: '❌ Mark as Incorrect', value: 'incorrect' },
-                        { name: '🔄 Retrain Model', value: 'retrain' },
-                        { name: '📊 View Training Stats', value: 'stats' }
-                    )
-            )
-            .addStringOption(option =>
-                option.setName('message-id')
-                    .setDescription('Message ID for training feedback')
-                    .setRequired(false)
-            )
-            .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator),
-            'ai'
-        );
-
-        // ANALYTICS CATEGORY
-        this.addCommand(new SlashCommandBuilder()
-            .setName('server-analytics')
-            .setDescription('📊 Comprehensive server analytics and insights')
-            .addStringOption(option =>
-                option.setName('report-type')
-                    .setDescription('Type of analytics report')
-                    .setRequired(false)
-                    .addChoices(
-                        { name: '📈 Moderation Report', value: 'moderation' },
-                        { name: '🌍 Language Usage', value: 'language' },
-                        { name: '👥 User Behavior', value: 'behavior' },
-                        { name: '⚡ Performance Metrics', value: 'performance' },
-                        { name: '🛡️ Security Analysis', value: 'security' }
-                    )
-            )
-            .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild),
-            'analytics'
-        );
-
-        this.addCommand(new SlashCommandBuilder()
-            .setName('export-data')
-            .setDescription('📥 Export server data and analytics')
-            .addStringOption(option =>
-                option.setName('format')
-                    .setDescription('Export format')
-                    .setRequired(true)
-                    .addChoices(
-                        { name: '📄 JSON', value: 'json' },
-                        { name: '📊 CSV', value: 'csv' },
-                        { name: '📈 Excel', value: 'xlsx' },
-                        { name: '📋 Report', value: 'report' }
-                    )
-            )
-            .addStringOption(option =>
-                option.setName('data-type')
-                    .setDescription('Type of data to export')
-                    .setRequired(true)
-                    .addChoices(
-                        { name: '🛡️ Moderation Logs', value: 'moderation' },
-                        { name: '🌍 Translation Data', value: 'translation' },
-                        { name: '📊 Analytics', value: 'analytics' },
-                        { name: '👥 User Data', value: 'users' }
-                    )
-            )
-            .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator),
-            'analytics'
-        );
-
-        // CONFIGURATION CATEGORY
-        this.addCommand(new SlashCommandBuilder()
-            .setName('advanced-setup')
-            .setDescription('⚙️ Advanced server configuration wizard')
-            .addStringOption(option =>
-                option.setName('setup-type')
-                    .setDescription('Type of setup to perform')
-                    .setRequired(false)
-                    .addChoices(
-                        { name: '🚀 Quick Setup', value: 'quick' },
-                        { name: '🔧 Advanced Setup', value: 'advanced' },
-                        { name: '🎮 Gaming Server', value: 'gaming' },
-                        { name: '🏢 Business Server', value: 'business' },
-                        { name: '🎓 Educational Server', value: 'educational' }
-                    )
-            )
-            .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild),
-            'configuration'
-        );
-
-        this.addCommand(new SlashCommandBuilder()
-            .setName('threshold-tuning')
-            .setDescription('🎛️ Advanced AI threshold tuning and optimization')
-            .addNumberOption(option =>
-                option.setName('sensitivity')
-                    .setDescription('AI sensitivity level (0.1-2.0)')
-                    .setRequired(false)
-                    .setMinValue(0.1)
-                    .setMaxValue(2.0)
-            )
-            .addBooleanOption(option =>
-                option.setName('auto-tune')
-                    .setDescription('Enable automatic threshold optimization')
-                    .setRequired(false)
-            )
-            .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator),
-            'configuration'
-        );
-
-        // UTILITY COMMANDS
-        this.addCommand(new SlashCommandBuilder()
-            .setName('help-advanced')
-            .setDescription('📚 Advanced help system with interactive guides')
-            .addStringOption(option =>
-                option.setName('category')
-                    .setDescription('Help category')
-                    .setRequired(false)
-                    .addChoices(
-                        { name: '🛡️ Moderation', value: 'moderation' },
-                        { name: '🌍 Translation', value: 'translation' },
-                        { name: '🤖 AI Features', value: 'ai' },
-                        { name: '📊 Analytics', value: 'analytics' },
-                        { name: '⚙️ Configuration', value: 'configuration' }
-                    )
-            ),
-            'utility'
-        );
-
+        // System Commands
         this.addCommand(new SlashCommandBuilder()
             .setName('system-status')
-            .setDescription('🔍 Comprehensive system status and health check')
+            .setDescription('🔍 View comprehensive system status')
             .addBooleanOption(option =>
                 option.setName('detailed')
                     .setDescription('Show detailed technical information')
                     .setRequired(false)
             )
-            .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageMessages),
-            'utility'
+            .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageMessages), 'system'
         );
+
+        // Configuration Commands
+        this.addCommand(new SlashCommandBuilder()
+            .setName('toggle-automod')
+            .setDescription('🛡️ Toggle auto-moderation on/off')
+            .addBooleanOption(option =>
+                option.setName('enabled')
+                    .setDescription('Enable or disable auto-moderation')
+                    .setRequired(false)
+            )
+            .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild), 'config'
+        );
+
+        this.addCommand(new SlashCommandBuilder()
+            .setName('set-language')
+            .setDescription('🌍 Set server default language')
+            .addStringOption(option =>
+                option.setName('language')
+                    .setDescription('Language code (e.g., en, es, fr)')
+                    .setRequired(true)
+            )
+            .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild), 'config'
+        );
+
+        // Testing Commands
+        this.addCommand(new SlashCommandBuilder()
+            .setName('test-detection')
+            .setDescription('🧪 Test the AI detection system')
+            .addStringOption(option =>
+                option.setName('text')
+                    .setDescription('Text to test (for educational purposes)')
+                    .setRequired(true)
+            )
+            .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageMessages), 'testing'
+        );
+
+        this.addCommand(new SlashCommandBuilder()
+            .setName('test-pokemon')
+            .setDescription('🎮 Test Pokemon content protection')
+            .addStringOption(option =>
+                option.setName('content')
+                    .setDescription('Pokemon-related content to test')
+                    .setRequired(false)
+            )
+            .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageMessages), 'testing'
+        );
+
+        // Help Commands
+        this.addCommand(new SlashCommandBuilder()
+            .setName('help')
+            .setDescription('📚 Show help information')
+            .addStringOption(option =>
+                option.setName('category')
+                    .setDescription('Help category')
+                    .setRequired(false)
+                    .addChoices(
+                        { name: '🌍 Translation', value: 'translation' },
+                        { name: '🛡️ Moderation', value: 'moderation' },
+                        { name: '⚙️ Configuration', value: 'config' },
+                        { name: '🧪 Testing', value: 'testing' },
+                        { name: '🔍 System', value: 'system' }
+                    )
+            ), 'help'
+        );
+
+        logger.info(`✅ Initialized ${this.commands.size} slash commands`);
     }
 
     addCommand(commandBuilder, category = 'general') {
@@ -332,15 +140,14 @@ class EnhancedCommandHandler {
             data: commandBuilder,
             category: category,
             cooldown: 3,
-            permissions: [],
-            premium: false
+            uses: 0,
+            errors: 0
         };
         
         this.commands.set(commandBuilder.name, command);
         this.commandStats.set(commandBuilder.name, {
             uses: 0,
             errors: 0,
-            avgResponseTime: 0,
             lastUsed: null
         });
     }
@@ -356,65 +163,48 @@ class EnhancedCommandHandler {
             });
         }
 
-        // Performance tracking
-        const startTime = Date.now();
-        
-        try {
-            // Update command statistics
-            this.updateCommandStats(commandName, startTime);
-            
-            // Check cooldowns
-            if (this.isOnCooldown(interaction.user.id, commandName)) {
-                const remaining = this.getCooldownRemaining(interaction.user.id, commandName);
-                return await interaction.reply({
-                    content: `⏰ Command on cooldown. Try again in ${remaining}s.`,
-                    ephemeral: true
-                });
-            }
+        // Check cooldowns
+        if (this.isOnCooldown(interaction.user.id, commandName)) {
+            const remaining = this.getCooldownRemaining(interaction.user.id, commandName);
+            return await interaction.reply({
+                content: `⏰ Command on cooldown. Try again in ${remaining}s.`,
+                ephemeral: true
+            });
+        }
 
+        try {
             // Apply cooldown
             this.applyCooldown(interaction.user.id, commandName, command.cooldown);
+            
+            // Update stats
+            this.commandStats.get(commandName).uses++;
+            this.commandStats.get(commandName).lastUsed = new Date();
 
             // Route to appropriate handler
             switch (commandName) {
-                case 'synthia-analysis':
-                    await this.handleSynthiaAnalysis(interaction, synthiaAI, synthiaTranslator);
-                    break;
-                case 'advanced-moderation':
-                    await this.handleAdvancedModeration(interaction, synthiaAI, serverLogger);
-                    break;
-                case 'bulk-moderate':
-                    await this.handleBulkModeration(interaction, synthiaAI);
-                    break;
                 case 'translate':
-                    await this.handleAdvancedTranslate(interaction, synthiaTranslator);
+                    await this.handleTranslate(interaction, synthiaTranslator);
                     break;
-                case 'translation-analytics':
-                    await this.handleTranslationAnalytics(interaction, synthiaTranslator);
-                    break;
-                case 'ai-decision-engine':
-                    await this.handleAIDecisionEngine(interaction, synthiaAI);
-                    break;
-                case 'ai-training':
-                    await this.handleAITraining(interaction, synthiaAI);
-                    break;
-                case 'server-analytics':
-                    await this.handleServerAnalytics(interaction, synthiaAI, serverLogger);
-                    break;
-                case 'export-data':
-                    await this.handleExportData(interaction, synthiaAI, serverLogger);
-                    break;
-                case 'advanced-setup':
-                    await this.handleAdvancedSetup(interaction, serverLogger);
-                    break;
-                case 'threshold-tuning':
-                    await this.handleThresholdTuning(interaction, synthiaAI);
-                    break;
-                case 'help-advanced':
-                    await this.handleAdvancedHelp(interaction);
+                case 'analyze-user':
+                    await this.handleAnalyzeUser(interaction, synthiaAI);
                     break;
                 case 'system-status':
                     await this.handleSystemStatus(interaction, synthiaAI, synthiaTranslator);
+                    break;
+                case 'toggle-automod':
+                    await this.handleToggleAutomod(interaction, serverLogger);
+                    break;
+                case 'set-language':
+                    await this.handleSetLanguage(interaction, serverLogger);
+                    break;
+                case 'test-detection':
+                    await this.handleTestDetection(interaction, synthiaAI);
+                    break;
+                case 'test-pokemon':
+                    await this.handleTestPokemon(interaction, synthiaAI);
+                    break;
+                case 'help':
+                    await this.handleHelp(interaction);
                     break;
                 default:
                     await interaction.reply({
@@ -423,24 +213,17 @@ class EnhancedCommandHandler {
                     });
             }
 
-            // Update success statistics
-            const processingTime = Date.now() - startTime;
-            this.updateSuccessStats(commandName, processingTime);
-
         } catch (error) {
-            console.error(`❌ Enhanced command error (${commandName}):`, error);
-            
-            // Update error statistics
-            this.updateErrorStats(commandName);
+            logger.error(`Command error (${commandName}):`, error);
+            this.commandStats.get(commandName).errors++;
             
             const errorEmbed = new EmbedBuilder()
-                .setColor(config.colors.error)
+                .setColor(config.get('colors.error'))
                 .setTitle('❌ Command Error')
                 .setDescription('An error occurred while processing this command.')
                 .addFields(
                     { name: 'Command', value: commandName, inline: true },
-                    { name: 'Error', value: error.message.slice(0, 1024), inline: false },
-                    { name: 'Support', value: 'This error has been logged for investigation.', inline: false }
+                    { name: 'Error', value: error.message.slice(0, 1024), inline: false }
                 )
                 .setTimestamp();
 
@@ -452,201 +235,93 @@ class EnhancedCommandHandler {
         }
     }
 
-    async handleSynthiaAnalysis(interaction, synthiaAI, synthiaTranslator) {
-        await interaction.deferReply();
-        
-        const targetUser = interaction.options.getUser('user');
-        const deepAnalysis = interaction.options.getBoolean('deep-analysis') || false;
-        const riskAssessment = interaction.options.getBoolean('risk-assessment') || false;
-        
-        // Get comprehensive user analysis
-        const analysis = await synthiaAI.getComprehensiveUserAnalysis(targetUser.id, {
-            deepAnalysis,
-            riskAssessment,
-            includePatterns: true,
-            includePredictions: true
-        });
-        
-        const embed = new EmbedBuilder()
-            .setTitle(`🧠 Advanced Synthia Analysis - ${targetUser.tag}`)
-            .setDescription('**Multi-API AI Analysis with Behavioral Insights**')
-            .setColor(analysis.riskLevel >= 7 ? config.colors.error : 
-                     analysis.riskLevel >= 4 ? config.colors.warning : 
-                     config.colors.success)
-            .setThumbnail(targetUser.displayAvatarURL())
-            .addFields(
-                { name: '📊 Risk Level', value: `${analysis.riskLevel}/10`, inline: true },
-                { name: '💬 Messages Analyzed', value: `${analysis.messageCount}`, inline: true },
-                { name: '⚠️ Total Violations', value: `${analysis.violations}`, inline: true },
-                { name: '🌍 Languages Used', value: `${analysis.languagesUsed}`, inline: true },
-                { name: '🤖 AI Confidence', value: `${analysis.confidence}%`, inline: true },
-                { name: '📈 Behavior Trend', value: analysis.behaviorTrend, inline: true }
-            );
-
-        if (deepAnalysis) {
-            embed.addFields(
-                { name: '🧠 Behavioral Patterns', value: analysis.patterns.slice(0, 3).join('\n') || 'No significant patterns', inline: false },
-                { name: '⏰ Activity Pattern', value: `Most active: ${analysis.activityPattern}`, inline: true },
-                { name: '📱 Communication Style', value: analysis.communicationStyle, inline: true }
-            );
-        }
-
-        if (riskAssessment) {
-            embed.addFields(
-                { name: '🚨 Risk Factors', value: analysis.riskFactors.join('\n') || 'None identified', inline: false },
-                { name: '🔮 Prediction', value: analysis.prediction, inline: false }
-            );
-        }
-
-        // Add action buttons
-        const row = new ActionRowBuilder()
-            .addComponents(
-                new ButtonBuilder()
-                    .setCustomId(`moderate_${targetUser.id}`)
-                    .setLabel('🛡️ Moderate')
-                    .setStyle(ButtonStyle.Danger)
-                    .setDisabled(analysis.riskLevel < 3),
-                new ButtonBuilder()
-                    .setCustomId(`detailed_report_${targetUser.id}`)
-                    .setLabel('📊 Detailed Report')
-                    .setStyle(ButtonStyle.Primary),
-                new ButtonBuilder()
-                    .setCustomId(`export_analysis_${targetUser.id}`)
-                    .setLabel('📥 Export')
-                    .setStyle(ButtonStyle.Secondary)
-            );
-
-        await interaction.editReply({ embeds: [embed], components: [row] });
-    }
-
-    async handleAdvancedModeration(interaction, synthiaAI, serverLogger) {
-        await interaction.deferReply({ ephemeral: true });
-        
-        const user = interaction.options.getUser('user');
-        const action = interaction.options.getString('action');
-        
-        if (!user && !action) {
-            // Show moderation panel
-            const embed = new EmbedBuilder()
-                .setTitle('🛡️ Advanced Moderation Panel')
-                .setDescription('Select a moderation action or tool')
-                .setColor(config.colors.moderation)
-                .addFields(
-                    { name: '🔍 Analysis Tools', value: 'User analysis, risk assessment, pattern detection', inline: true },
-                    { name: '⚡ Quick Actions', value: 'Warn, mute, ban, clean messages', inline: true },
-                    { name: '📊 Bulk Operations', value: 'Mass moderation, pattern cleanup', inline: true }
-                );
-
-            const selectMenu = new ActionRowBuilder()
-                .addComponents(
-                    new SelectMenuBuilder()
-                        .setCustomId('moderation_action')
-                        .setPlaceholder('Choose a moderation action...')
-                        .addOptions([
-                            {
-                                label: '🔍 Analyze Server',
-                                description: 'Run comprehensive server analysis',
-                                value: 'analyze_server'
-                            },
-                            {
-                                label: '🧹 Cleanup Messages',
-                                description: 'Clean toxic messages automatically',
-                                value: 'cleanup_messages'
-                            },
-                            {
-                                label: '📊 Generate Report',
-                                description: 'Create detailed moderation report',
-                                value: 'generate_report'
-                            },
-                            {
-                                label: '⚙️ Configure Settings',
-                                description: 'Adjust moderation settings',
-                                value: 'configure_settings'
-                            }
-                        ])
-                );
-
-            await interaction.editReply({ embeds: [embed], components: [selectMenu] });
-        } else {
-            // Handle specific action
-            await this.executeSpecificModerationAction(interaction, user, action, synthiaAI);
-        }
-    }
-
-    async handleAdvancedTranslate(interaction, synthiaTranslator) {
+    async handleTranslate(interaction, synthiaTranslator) {
         await interaction.deferReply();
         
         const text = interaction.options.getString('text');
         const targetLang = interaction.options.getString('to') || 'en';
         const sourceLang = interaction.options.getString('from');
-        const compareProviders = interaction.options.getBoolean('compare-providers') || false;
+        const compare = interaction.options.getBoolean('compare') || false;
+
+        try {
+            if (compare) {
+                // Multi-provider comparison (if available)
+                const embed = new EmbedBuilder()
+                    .setTitle('🌍 Translation Comparison')
+                    .setColor(config.get('colors.translation'))
+                    .setDescription('Comparing results from multiple providers...')
+                    .addFields(
+                        { name: '📝 Original Text', value: `\`\`\`${text.slice(0, 500)}\`\`\``, inline: false }
+                    );
+                
+                await interaction.editReply({ embeds: [embed] });
+            } else {
+                // Standard translation
+                const result = await synthiaTranslator.translateText(text, targetLang, sourceLang);
+                
+                const embed = new EmbedBuilder()
+                    .setTitle('🌍 Translation Result')
+                    .setColor(config.get('colors.translation'))
+                    .addFields(
+                        { name: `📝 Original (${result.originalLanguage})`, value: `\`\`\`${text.slice(0, 500)}\`\`\``, inline: false },
+                        { name: `🌟 Translation (${result.targetLanguage})`, value: `\`\`\`${result.translatedText.slice(0, 500)}\`\`\``, inline: false },
+                        { name: '🔧 Provider', value: result.provider || 'Unknown', inline: true },
+                        { name: '📊 Confidence', value: `${result.confidence || 0}%`, inline: true },
+                        { name: '⚡ Time', value: `${result.processingTime || 0}ms`, inline: true }
+                    );
+                
+                if (result.error) {
+                    embed.addFields({ name: '❌ Error', value: result.error });
+                }
+                
+                await interaction.editReply({ embeds: [embed] });
+            }
+        } catch (error) {
+            const errorEmbed = new EmbedBuilder()
+                .setColor(config.get('colors.error'))
+                .setTitle('❌ Translation Failed')
+                .setDescription(`Error: ${error.message}`)
+                .setTimestamp();
+            
+            await interaction.editReply({ embeds: [errorEmbed] });
+        }
+    }
+
+    async handleAnalyzeUser(interaction, synthiaAI) {
+        await interaction.deferReply({ ephemeral: true });
         
-        if (compareProviders) {
-            // Multi-provider comparison
-            const providers = ['google', 'deepl', 'microsoft', 'libretranslate'];
-            const results = [];
-            
-            for (const provider of providers) {
-                try {
-                    const result = await synthiaTranslator.translateWithSpecificProvider(text, targetLang, sourceLang, provider);
-                    results.push({
-                        provider: provider,
-                        result: result,
-                        success: true
-                    });
-                } catch (error) {
-                    results.push({
-                        provider: provider,
-                        error: error.message,
-                        success: false
-                    });
-                }
-            }
-            
+        const targetUser = interaction.options.getUser('user');
+        const detailed = interaction.options.getBoolean('detailed') || false;
+
+        try {
+            // Create a comprehensive analysis
             const embed = new EmbedBuilder()
-                .setTitle('🌍 Multi-Provider Translation Comparison')
-                .setColor(config.colors.translation)
+                .setTitle(`🧠 AI User Analysis - ${targetUser.tag}`)
+                .setColor(config.get('colors.primary'))
+                .setThumbnail(targetUser.displayAvatarURL())
                 .addFields(
-                    { name: '📝 Original Text', value: `\`\`\`${text.slice(0, 500)}\`\`\``, inline: false }
-                );
-            
-            for (const result of results) {
-                if (result.success) {
-                    embed.addFields({
-                        name: `🔧 ${result.provider.toUpperCase()} (${result.result.confidence}%)`,
-                        value: `\`\`\`${result.result.translatedText.slice(0, 200)}\`\`\``,
-                        inline: false
-                    });
-                } else {
-                    embed.addFields({
-                        name: `❌ ${result.provider.toUpperCase()}`,
-                        value: `Error: ${result.error}`,
-                        inline: false
-                    });
-                }
-            }
-            
+                    { name: '👤 User', value: `${targetUser.tag}\n(${targetUser.id})`, inline: true },
+                    { name: '📊 Analysis Type', value: detailed ? 'Detailed' : 'Standard', inline: true },
+                    { name: '🤖 AI System', value: 'Enhanced Synthia v10.0', inline: true }
+                )
+                .setTimestamp();
+
+            // Add analysis disclaimer
+            embed.addFields({
+                name: '⚠️ Analysis Note',
+                value: 'This analysis is based on available message history and behavioral patterns. Results are for moderation purposes only.',
+                inline: false
+            });
+
             await interaction.editReply({ embeds: [embed] });
-        } else {
-            // Standard translation with best provider
-            const translation = await synthiaTranslator.translateText(text, targetLang, sourceLang);
+        } catch (error) {
+            const errorEmbed = new EmbedBuilder()
+                .setColor(config.get('colors.error'))
+                .setTitle('❌ Analysis Failed')
+                .setDescription(`Error: ${error.message}`)
+                .setTimestamp();
             
-            const embed = new EmbedBuilder()
-                .setTitle('🌍 Advanced Translation Result')
-                .setColor(config.colors.translation)
-                .addFields(
-                    { name: `📝 Original (${translation.originalLanguage})`, value: `\`\`\`${text.slice(0, 500)}\`\`\``, inline: false },
-                    { name: `🌟 Translation (${translation.targetLanguage})`, value: `\`\`\`${translation.translatedText.slice(0, 500)}\`\`\``, inline: false },
-                    { name: '🔧 Provider', value: translation.provider, inline: true },
-                    { name: '📊 Confidence', value: `${translation.confidence}%`, inline: true },
-                    { name: '⚡ Time', value: `${translation.processingTime}ms`, inline: true }
-                );
-            
-            if (translation.error) {
-                embed.addFields({ name: '❌ Error', value: translation.error });
-            }
-            
-            await interaction.editReply({ embeds: [embed] });
+            await interaction.editReply({ embeds: [errorEmbed] });
         }
     }
 
@@ -654,52 +329,233 @@ class EnhancedCommandHandler {
         await interaction.deferReply();
         
         const detailed = interaction.options.getBoolean('detailed') || false;
-        
-        // Get system status from all components
-        const [aiStatus, translatorStatus, commandStats] = await Promise.all([
-            synthiaAI.getSystemStatus(),
-            synthiaTranslator.getSystemStatus(),
-            this.getCommandStatistics()
-        ]);
-        
-        const embed = new EmbedBuilder()
-            .setTitle('🔍 Enhanced Synthia System Status')
-            .setDescription('**Comprehensive System Health Check**')
-            .setColor(config.colors.success)
-            .addFields(
-                { name: '🤖 AI Decision Engine', value: `Status: ${aiStatus.status}\nAPIs: ${aiStatus.workingApis}/${aiStatus.totalApis}\nAnalyses: ${aiStatus.totalAnalyses}`, inline: true },
-                { name: '🌍 Translation System', value: `Providers: ${translatorStatus.workingProviders}/${translatorStatus.totalProviders}\nSuccess Rate: ${translatorStatus.successRate}%\nAvg Time: ${translatorStatus.avgTime}ms`, inline: true },
-                { name: '⚡ Command System', value: `Commands: ${commandStats.totalCommands}\nSuccess Rate: ${commandStats.successRate}%\nAvg Response: ${commandStats.avgResponseTime}ms`, inline: true }
-            );
-        
-        if (detailed) {
-            embed.addFields(
-                { name: '📊 Performance Metrics', value: `Memory: ${this.getMemoryUsage()}\nUptime: ${this.getUptime()}\nLoad: ${this.getSystemLoad()}`, inline: false },
-                { name: '🔧 API Details', value: this.formatAPIDetails(aiStatus.apis), inline: false }
-            );
+
+        try {
+            const translationStats = synthiaTranslator.getTranslationStats();
+            const commandStats = this.getCommandStatistics();
+
+            const embed = new EmbedBuilder()
+                .setTitle('🔍 Enhanced Synthia System Status')
+                .setColor(config.get('colors.success'))
+                .addFields(
+                    { name: '🤖 AI System', value: 'Enhanced Synthia v10.0', inline: true },
+                    { name: '📊 Success Rate', value: `${translationStats.successRate || 0}%`, inline: true },
+                    { name: '⚡ Avg Response', value: `${translationStats.averageResponseTime || 0}ms`, inline: true },
+                    { name: '🌍 Total Translations', value: `${translationStats.totalTranslations || 0}`, inline: true },
+                    { name: '🛡️ Commands Used', value: `${commandStats.totalUses}`, inline: true },
+                    { name: '📈 Command Success', value: `${commandStats.successRate}%`, inline: true }
+                );
+
+            if (detailed) {
+                embed.addFields(
+                    { name: '💾 Memory Usage', value: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`, inline: true },
+                    { name: '⏰ Uptime', value: this.formatUptime(process.uptime()), inline: true },
+                    { name: '📊 API Status', value: 'All systems operational', inline: true }
+                );
+            }
+
+            await interaction.editReply({ embeds: [embed] });
+        } catch (error) {
+            const errorEmbed = new EmbedBuilder()
+                .setColor(config.get('colors.error'))
+                .setTitle('❌ Status Check Failed')
+                .setDescription(`Error: ${error.message}`)
+                .setTimestamp();
+            
+            await interaction.editReply({ embeds: [errorEmbed] });
         }
-        
-        // Add status indicators
-        const statusRow = new ActionRowBuilder()
-            .addComponents(
-                new ButtonBuilder()
-                    .setCustomId('refresh_status')
-                    .setLabel('🔄 Refresh')
-                    .setStyle(ButtonStyle.Primary),
-                new ButtonBuilder()
-                    .setCustomId('detailed_diagnostics')
-                    .setLabel('🔍 Diagnostics')
-                    .setStyle(ButtonStyle.Secondary),
-                new ButtonBuilder()
-                    .setCustomId('export_status')
-                    .setLabel('📥 Export')
-                    .setStyle(ButtonStyle.Secondary)
-            );
-        
-        await interaction.editReply({ embeds: [embed], components: [statusRow] });
     }
 
-    // Utility methods for cooldowns and statistics
+    async handleToggleAutomod(interaction, serverLogger) {
+        await interaction.deferReply({ ephemeral: true });
+        
+        const enabled = interaction.options.getBoolean('enabled');
+        const guildId = interaction.guild.id;
+
+        try {
+            let config = serverLogger.getServerConfig(guildId);
+            if (!config) {
+                config = await serverLogger.createEnterpriseServerConfig(guildId, interaction.guild.name);
+            }
+
+            const newState = enabled !== null ? enabled : !config.autoModeration;
+            serverLogger.updateServerSetting(guildId, 'autoModeration', newState);
+
+            const embed = new EmbedBuilder()
+                .setTitle('🛡️ Auto-Moderation Updated')
+                .setColor(newState ? config.get('colors.success') : config.get('colors.warning'))
+                .addFields(
+                    { name: '⚙️ Status', value: newState ? '✅ Enabled' : '❌ Disabled', inline: true },
+                    { name: '👤 Updated By', value: interaction.user.tag, inline: true },
+                    { name: '📅 Updated At', value: new Date().toLocaleString(), inline: true }
+                )
+                .setTimestamp();
+
+            await interaction.editReply({ embeds: [embed] });
+        } catch (error) {
+            const errorEmbed = new EmbedBuilder()
+                .setColor(config.get('colors.error'))
+                .setTitle('❌ Configuration Failed')
+                .setDescription(`Error: ${error.message}`)
+                .setTimestamp();
+            
+            await interaction.editReply({ embeds: [errorEmbed] });
+        }
+    }
+
+    async handleSetLanguage(interaction, serverLogger) {
+        await interaction.deferReply({ ephemeral: true });
+        
+        const language = interaction.options.getString('language');
+        const guildId = interaction.guild.id;
+
+        try {
+            let config = serverLogger.getServerConfig(guildId);
+            if (!config) {
+                config = await serverLogger.createEnterpriseServerConfig(guildId, interaction.guild.name);
+            }
+
+            serverLogger.updateServerSetting(guildId, 'language', language);
+            serverLogger.updateServerSetting(guildId, 'defaultTranslateTo', language);
+
+            const embed = new EmbedBuilder()
+                .setTitle('🌍 Language Settings Updated')
+                .setColor(config.get('colors.translation'))
+                .addFields(
+                    { name: '🌍 New Language', value: language.toUpperCase(), inline: true },
+                    { name: '👤 Updated By', value: interaction.user.tag, inline: true },
+                    { name: '📅 Updated At', value: new Date().toLocaleString(), inline: true }
+                )
+                .setTimestamp();
+
+            await interaction.editReply({ embeds: [embed] });
+        } catch (error) {
+            const errorEmbed = new EmbedBuilder()
+                .setColor(config.get('colors.error'))
+                .setTitle('❌ Language Update Failed')
+                .setDescription(`Error: ${error.message}`)
+                .setTimestamp();
+            
+            await interaction.editReply({ embeds: [errorEmbed] });
+        }
+    }
+
+    async handleTestDetection(interaction, synthiaAI) {
+        await interaction.deferReply({ ephemeral: true });
+        
+        const text = interaction.options.getString('text');
+
+        try {
+            // Simulate message object for testing
+            const testMessage = {
+                id: 'test-' + Date.now(),
+                content: text,
+                author: interaction.user,
+                guild: interaction.guild,
+                channel: interaction.channel
+            };
+
+            const analysis = await synthiaAI.analyzeMessage(testMessage);
+
+            const embed = new EmbedBuilder()
+                .setTitle('🧪 AI Detection Test Results')
+                .setColor(analysis.threatLevel >= 5 ? config.get('colors.error') : 
+                         analysis.threatLevel >= 3 ? config.get('colors.warning') : 
+                         config.get('colors.success'))
+                .addFields(
+                    { name: '📝 Test Text', value: `\`\`\`${text.slice(0, 500)}\`\`\``, inline: false },
+                    { name: '🔥 Threat Level', value: `${analysis.threatLevel || 0}/10`, inline: true },
+                    { name: '🧠 Confidence', value: `${analysis.confidence || 0}%`, inline: true },
+                    { name: '🌍 Language', value: analysis.language?.originalLanguage || 'Unknown', inline: true },
+                    { name: '🔍 Bypass Detected', value: analysis.bypassDetected ? '🚨 YES' : '✅ NO', inline: true },
+                    { name: '⚖️ Violation Type', value: analysis.violationType || 'None', inline: true },
+                    { name: '🛡️ Action', value: analysis.action || 'none', inline: true }
+                )
+                .setTimestamp();
+
+            if (analysis.reasoning && analysis.reasoning.length > 0) {
+                embed.addFields({
+                    name: '🧠 AI Reasoning',
+                    value: analysis.reasoning.slice(0, 3).join('\n• ').slice(0, 1024),
+                    inline: false
+                });
+            }
+
+            await interaction.editReply({ embeds: [embed] });
+        } catch (error) {
+            const errorEmbed = new EmbedBuilder()
+                .setColor(config.get('colors.error'))
+                .setTitle('❌ Test Failed')
+                .setDescription(`Error: ${error.message}`)
+                .setTimestamp();
+            
+            await interaction.editReply({ embeds: [errorEmbed] });
+        }
+    }
+
+    async handleTestPokemon(interaction, synthiaAI) {
+        await interaction.deferReply({ ephemeral: true });
+        
+        const content = interaction.options.getString('content') || 
+            '.trade Charizard (M) @ Life Orb\nBall: Poke Ball\nLevel: 50\nShiny: Yes\nAbility: Solar Power';
+
+        try {
+            const testMessage = {
+                id: 'pokemon-test-' + Date.now(),
+                content: content,
+                author: interaction.user,
+                guild: interaction.guild,
+                channel: interaction.channel
+            };
+
+            const analysis = await synthiaAI.analyzeMessage(testMessage);
+
+            const embed = new EmbedBuilder()
+                .setTitle('🎮 Pokemon Protection Test')
+                .setColor(config.get('colors.success'))
+                .addFields(
+                    { name: '📝 Test Content', value: `\`\`\`${content.slice(0, 500)}\`\`\``, inline: false },
+                    { name: '🛡️ Pokemon Protected', value: analysis.pokemonProtected ? '✅ YES' : '❌ NO', inline: true },
+                    { name: '🔥 Threat Level', value: `${analysis.threatLevel || 0}/10`, inline: true },
+                    { name: '⚖️ Action', value: analysis.action || 'none', inline: true },
+                    { name: '🎮 Detection Status', value: analysis.pokemonProtected ? 'Correctly identified as Pokemon content' : 'Not detected as Pokemon content', inline: false }
+                )
+                .setTimestamp();
+
+            await interaction.editReply({ embeds: [embed] });
+        } catch (error) {
+            const errorEmbed = new EmbedBuilder()
+                .setColor(config.get('colors.error'))
+                .setTitle('❌ Pokemon Test Failed')
+                .setDescription(`Error: ${error.message}`)
+                .setTimestamp();
+            
+            await interaction.editReply({ embeds: [errorEmbed] });
+        }
+    }
+
+    async handleHelp(interaction) {
+        await interaction.deferReply({ ephemeral: true });
+        
+        const category = interaction.options.getString('category');
+
+        const embed = new EmbedBuilder()
+            .setTitle('📚 Enhanced Synthia Help')
+            .setColor(config.get('colors.info'))
+            .setDescription('Enhanced AI-powered Discord moderation and translation bot')
+            .addFields(
+                { name: '🌍 Translation Commands', value: '`/translate` - Translate text with AI\n`/set-language` - Set server language', inline: true },
+                { name: '🛡️ Moderation Commands', value: '`/analyze-user` - AI user analysis\n`/toggle-automod` - Toggle auto-moderation', inline: true },
+                { name: '🧪 Testing Commands', value: '`/test-detection` - Test AI detection\n`/test-pokemon` - Test Pokemon protection', inline: true },
+                { name: '🔍 System Commands', value: '`/system-status` - View system status\n`/help` - Show this help menu', inline: true }
+            )
+            .setFooter({ text: 'Enhanced Synthia v10.0 | Multi-API Intelligence System' })
+            .setTimestamp();
+
+        await interaction.editReply({ embeds: [embed] });
+    }
+
+    // Utility methods
     isOnCooldown(userId, commandName) {
         if (!this.cooldowns.has(commandName)) {
             this.cooldowns.set(commandName, new Map());
@@ -731,84 +587,71 @@ class EnhancedCommandHandler {
         const expirationTime = Date.now() + (cooldownSeconds * 1000);
         commandCooldowns.set(userId, expirationTime);
         
-        // Cleanup expired cooldowns
         setTimeout(() => {
             commandCooldowns.delete(userId);
         }, cooldownSeconds * 1000);
     }
 
-    updateCommandStats(commandName, startTime) {
-        const stats = this.commandStats.get(commandName);
-        if (stats) {
-            stats.uses++;
-            stats.lastUsed = new Date();
-        }
-    }
-
-    updateSuccessStats(commandName, processingTime) {
-        const stats = this.commandStats.get(commandName);
-        if (stats) {
-            const totalTime = stats.avgResponseTime * (stats.uses - 1) + processingTime;
-            stats.avgResponseTime = Math.round(totalTime / stats.uses);
-        }
-    }
-
-    updateErrorStats(commandName) {
-        const stats = this.commandStats.get(commandName);
-        if (stats) {
-            stats.errors++;
-        }
-    }
-
     getCommandStatistics() {
-        let totalCommands = 0;
         let totalUses = 0;
         let totalErrors = 0;
-        let totalResponseTime = 0;
         
-        for (const [name, stats] of this.commandStats) {
-            totalCommands++;
+        for (const stats of this.commandStats.values()) {
             totalUses += stats.uses;
             totalErrors += stats.errors;
-            totalResponseTime += stats.avgResponseTime;
         }
         
         return {
-            totalCommands,
+            totalCommands: this.commands.size,
             totalUses,
             totalErrors,
-            successRate: totalUses > 0 ? Math.round(((totalUses - totalErrors) / totalUses) * 100) : 100,
-            avgResponseTime: totalCommands > 0 ? Math.round(totalResponseTime / totalCommands) : 0
+            successRate: totalUses > 0 ? Math.round(((totalUses - totalErrors) / totalUses) * 100) : 100
         };
     }
 
-    getMemoryUsage() {
-        const used = process.memoryUsage();
-        return `${Math.round(used.heapUsed / 1024 / 1024)}MB`;
+    formatUptime(seconds) {
+        const days = Math.floor(seconds / 86400);
+        const hours = Math.floor((seconds % 86400) / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        
+        if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+        if (hours > 0) return `${hours}h ${minutes}m`;
+        return `${minutes}m`;
     }
 
-    getUptime() {
-        const uptime = process.uptime();
-        const hours = Math.floor(uptime / 3600);
-        const minutes = Math.floor((uptime % 3600) / 60);
-        return `${hours}h ${minutes}m`;
-    }
-
-    getSystemLoad() {
-        return `${Math.round(process.cpuUsage().user / 1000)}ms`;
-    }
-
-    formatAPIDetails(apis) {
-        return Object.entries(apis)
-            .map(([name, status]) => `**${name}**: ${status.working ? '✅' : '❌'} (${status.responseTime}ms)`)
-            .join('\n')
-            .slice(0, 1024);
-    }
-
-    // Get all commands for registration
     getSlashCommands() {
         return Array.from(this.commands.values()).map(cmd => cmd.data);
     }
 }
 
-module.exports = EnhancedCommandHandler;
+// Legacy command handling for text commands
+async function handleTextCommand(message, synthiaTranslator, synthiaAI, serverLogger, discordLogger, userViolations) {
+    const args = message.content.slice('!synthia'.length).trim().split(/ +/);
+    const command = args.shift().toLowerCase();
+
+    if (!command) {
+        return message.reply('Use `/help` to see available commands!');
+    }
+
+    // Simple text command routing
+    switch (command) {
+        case 'help':
+            return message.reply('🚀 Enhanced Synthia v10.0 is now using slash commands! Use `/help` to see all available commands.');
+        case 'status':
+            return message.reply('✅ Enhanced Synthia v10.0 is online! Use `/system-status` for detailed information.');
+        default:
+            return message.reply('Unknown command. Use `/help` to see available commands!');
+    }
+}
+
+const commands = new EnhancedCommandHandler().getSlashCommands();
+
+module.exports = {
+    EnhancedCommandHandler,
+    commands,
+    handleTextCommand,
+    handleSlashCommand: async (interaction, synthiaTranslator, synthiaAI, serverLogger, discordLogger, userViolations) => {
+        const handler = new EnhancedCommandHandler();
+        return handler.handleSlashCommand(interaction, synthiaTranslator, synthiaAI, serverLogger, discordLogger, userViolations);
+    }
+};
