@@ -8,7 +8,7 @@ const ServerConfigManager = require('./server/serverManager.js');
 const EnhancedDiscordLogger = require('./logging/discordLogger.js');
 const EnhancedSynthiaAI = require('./moderation/synthiaAI.js');
 const { violationTypes, userViolations, executeModerationAction } = require('./utils/violations.js');
-const { commands, handleTextCommand, handleSlashCommand } = require('./commands/commandHandler.js');
+const EnhancedCommandManager = require('./commands/commandHandler.js');
 
 // Initialize Discord client
 const client = new Client({
@@ -33,6 +33,84 @@ const synthiaTranslator = new SynthiaMultiTranslator();
 const serverLogger = new ServerConfigManager();
 const discordLogger = new EnhancedDiscordLogger(serverLogger);
 const synthiaAI = new EnhancedSynthiaAI(synthiaTranslator, discordLogger);
+
+// Initialize command manager
+let commandManager;
+
+// Simple text command handler for legacy commands
+async function handleTextCommand(message, translator, ai, serverManager, logger, violations) {
+    const args = message.content.slice('!synthia'.length).trim().split(/ +/);
+    const command = args.shift().toLowerCase();
+    
+    switch (command) {
+        case 'help':
+            const helpEmbed = new EmbedBuilder()
+                .setColor(0x0099ff)
+                .setTitle('📚 Synthia AI Commands')
+                .setDescription('Here are all available commands:')
+                .addFields(
+                    { name: '🤖 AI Commands', value: '`/ask` `/analyze`', inline: true },
+                    { name: '🌐 Translation', value: '`/translate`', inline: true },
+                    { name: '🛡️ Moderation', value: '`/warn` `/mute` `/kick` `/ban`', inline: true },
+                    { name: '📊 Analytics', value: '`/stats` `/activity`', inline: true },
+                    { name: '⚙️ Configuration', value: '`/config`', inline: true },
+                    { name: '🔧 Utilities', value: '`/userinfo` `/serverinfo` `/clean`', inline: true }
+                )
+                .setFooter({ text: 'Use slash commands (/) for best experience' })
+                .setTimestamp();
+            
+            await message.reply({ embeds: [helpEmbed] });
+            break;
+        
+        case 'ping':
+            const start = Date.now();
+            const msg = await message.reply('🏓 Pinging...');
+            const end = Date.now();
+            
+            const pingEmbed = new EmbedBuilder()
+                .setColor(0x00ff00)
+                .setTitle('🏓 Pong!')
+                .addFields(
+                    { name: 'Bot Latency', value: `${end - start}ms`, inline: true },
+                    { name: 'API Latency', value: `${Math.round(client.ws.ping)}ms`, inline: true },
+                    { name: 'Status', value: '🟢 Online', inline: true }
+                )
+                .setTimestamp();
+            
+            await msg.edit({ content: '', embeds: [pingEmbed] });
+            break;
+        
+        case 'translate':
+            if (args.length < 2) {
+                await message.reply('Usage: `!synthia translate <language> <text>`');
+                return;
+            }
+            
+            const targetLang = args.shift();
+            const textToTranslate = args.join(' ');
+            
+            try {
+                const translation = await translator.translateText(textToTranslate, targetLang);
+                
+                const translateEmbed = new EmbedBuilder()
+                    .setColor(0x0099ff)
+                    .setTitle('🌐 Translation')
+                    .addFields(
+                        { name: 'Original', value: textToTranslate, inline: false },
+                        { name: `Translation (${targetLang.toUpperCase()})`, value: translation.translatedText || 'Translation failed', inline: false }
+                    )
+                    .setTimestamp();
+                
+                await message.reply({ embeds: [translateEmbed] });
+            } catch (error) {
+                await message.reply('❌ Translation failed. Please try again.');
+            }
+            break;
+        
+        default:
+            await message.reply('Unknown command. Use `!synthia help` for available commands.');
+    }
+}
 
 // FIXED: Working message monitoring with proper moderation
 client.on('messageCreate', async (message) => {
@@ -181,7 +259,15 @@ client.on('messageCreate', async (message) => {
 // Enhanced slash command handler
 client.on('interactionCreate', async (interaction) => {
     if (!interaction.isChatInputCommand()) return;
-    await handleSlashCommand(interaction, synthiaTranslator, synthiaAI, serverLogger, discordLogger, userViolations);
+    
+    if (commandManager) {
+        await commandManager.handleSlashCommand(interaction);
+    } else {
+        await interaction.reply({ 
+            content: 'Command manager is not initialized yet. Please try again in a moment.', 
+            ephemeral: true 
+        });
+    }
 });
 
 // Bot ready event
@@ -236,17 +322,14 @@ client.once('ready', async () => {
         type: ActivityType.Watching
     });
     
-    // Register slash commands
-    const rest = new REST({ version: '10' }).setToken(config.token);
+    // Initialize command manager after client is ready
     try {
-        console.log('🔄 Registering enhanced slash commands...');
-        await rest.put(
-            Routes.applicationCommands(client.user.id),
-            { body: commands.map(cmd => cmd.toJSON()) }
-        );
-        console.log('✅ Enhanced commands registered successfully');
+        console.log('🔄 Initializing command manager...');
+        commandManager = new EnhancedCommandManager(client, null, synthiaAI, synthiaTranslator, null);
+        await commandManager.initialize();
+        console.log('✅ Command manager initialized successfully');
     } catch (error) {
-        console.error('❌ Failed to register enhanced commands:', error);
+        console.error('❌ Failed to initialize command manager:', error);
     }
     
     console.log('🎯 Enhanced Multi-API Intelligence System fully operational!');
