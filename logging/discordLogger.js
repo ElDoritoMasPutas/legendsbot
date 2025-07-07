@@ -1,141 +1,300 @@
-// Enhanced Discord Logger v9.0
-const { EmbedBuilder } = require('discord.js');
-const config = require('../config/config.js');
+// Enhanced Logger v10.0 - Enterprise-Grade Logging System
+const winston = require('winston');
+const path = require('path');
+const fs = require('fs');
 
-class EnhancedDiscordLogger {
-    constructor(serverManager) {
-        this.serverManager = serverManager;
-        this.logCounts = {
-            info: 0,
-            warning: 0,
-            error: 0,
-            success: 0,
-            moderation: 0,
-            translation: 0,
-            multi_language: 0,
-            hourly_report: 0,
-            synthia_intelligence: 0,
-            elongated_detection: 0,
-            multiapi: 0,
-            performance: 0
-        };
-        this.hourlyStats = new Map();
+class EnhancedLogger {
+    constructor() {
+        this.logDir = './logs';
+        this.ensureLogDirectory();
+        this.setupLogger();
     }
 
-    async sendLog(guild, type, title, description, fields = [], color = null) {
-        if (!guild) return;
-
-        let logChannels = this.serverManager.getLogChannels(guild.id);
-        
-        // Auto-setup if no log channels configured
-        if (logChannels.length === 0) {
-            console.log(`🔄 No log channels for ${guild.name}, attempting auto-setup...`);
-            const autoChannel = await this.serverManager.autoSetupLogChannel(guild);
-            if (autoChannel) {
-                logChannels = [autoChannel.id];
-            } else {
-                console.log(`⚠️ No log channels configured for ${guild.name}. Use !synthia loghere to set up logging.`);
-                return;
-            }
+    ensureLogDirectory() {
+        if (!fs.existsSync(this.logDir)) {
+            fs.mkdirSync(this.logDir, { recursive: true });
         }
+    }
 
-        this.logCounts[type] = (this.logCounts[type] || 0) + 1;
-
-        const embed = new EmbedBuilder()
-            .setColor(color || config.colors[type] || config.colors.primary)
-            .setTitle(title)
-            .setDescription(description)
-            .setFooter({ 
-                text: `Synthia v${config.aiVersion} Multi-API System • ${type.toUpperCase()} #${this.logCounts[type]}`,
-                iconURL: guild.client.user?.displayAvatarURL() 
+    setupLogger() {
+        // Custom log format
+        const logFormat = winston.format.combine(
+            winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+            winston.format.errors({ stack: true }),
+            winston.format.printf(({ timestamp, level, message, stack, ...meta }) => {
+                let log = `${timestamp} [${level.toUpperCase()}]: ${message}`;
+                
+                if (Object.keys(meta).length > 0) {
+                    log += ` ${JSON.stringify(meta)}`;
+                }
+                
+                if (stack) {
+                    log += `\n${stack}`;
+                }
+                
+                return log;
             })
-            .setTimestamp();
+        );
 
-        if (fields.length > 0) {
-            const safeFields = fields.map(field => ({
-                name: String(field.name || 'Unknown'),
-                value: String(field.value || 'N/A').slice(0, 1024),
-                inline: Boolean(field.inline)
-            }));
-            embed.addFields(safeFields.slice(0, 25));
-        }
+        // Console format with colors
+        const consoleFormat = winston.format.combine(
+            winston.format.colorize(),
+            winston.format.timestamp({ format: 'HH:mm:ss' }),
+            winston.format.printf(({ timestamp, level, message, ...meta }) => {
+                let log = `${timestamp} ${level}: ${message}`;
+                
+                if (Object.keys(meta).length > 0) {
+                    log += ` ${JSON.stringify(meta, null, 2)}`;
+                }
+                
+                return log;
+            })
+        );
 
-        embed.setAuthor({
-            name: 'Synthia AI v9.0 - Enhanced Multi-API Intelligence',
-            iconURL: guild.client.user?.displayAvatarURL()
+        // Create transports array
+        const transports = [];
+
+        // Console transport
+        transports.push(
+            new winston.transports.Console({
+                level: process.env.LOG_LEVEL || 'info',
+                format: consoleFormat,
+                handleExceptions: true,
+                handleRejections: true
+            })
+        );
+
+        // File transports
+        transports.push(
+            // Combined log file
+            new winston.transports.File({
+                filename: path.join(this.logDir, 'combined.log'),
+                level: 'info',
+                format: logFormat,
+                maxsize: 20 * 1024 * 1024, // 20MB
+                maxFiles: 14,
+                tailable: true
+            }),
+            
+            // Error log file
+            new winston.transports.File({
+                filename: path.join(this.logDir, 'error.log'),
+                level: 'error',
+                format: logFormat,
+                maxsize: 10 * 1024 * 1024, // 10MB
+                maxFiles: 7,
+                tailable: true
+            }),
+            
+            // Debug log file
+            new winston.transports.File({
+                filename: path.join(this.logDir, 'debug.log'),
+                level: 'debug',
+                format: logFormat,
+                maxsize: 50 * 1024 * 1024, // 50MB
+                maxFiles: 3,
+                tailable: true
+            })
+        );
+
+        // Create the logger
+        this.logger = winston.createLogger({
+            level: process.env.LOG_LEVEL || 'info',
+            format: logFormat,
+            transports: transports,
+            exitOnError: false
         });
 
-        for (const channelId of logChannels) {
-            try {
-                const channel = guild.channels.cache.get(channelId);
-                if (channel && channel.isTextBased()) {
-                    await channel.send({ embeds: [embed] });
-                } else {
-                    this.serverManager.removeLogChannel(guild.id, channelId);
-                    console.log(`🗑️ Removed invalid log channel ${channelId} from ${guild.name}`);
-                }
-            } catch (error) {
-                console.error(`❌ Failed to send log to channel ${channelId}:`, error);
-                if (error.code === 50013 || error.code === 10003) {
-                    await this.serverManager.autoSetupLogChannel(guild);
+        // Handle uncaught exceptions and rejections
+        this.logger.exceptions.handle(
+            new winston.transports.File({
+                filename: path.join(this.logDir, 'exceptions.log'),
+                format: logFormat,
+                maxsize: 10 * 1024 * 1024,
+                maxFiles: 5
+            })
+        );
+
+        this.logger.rejections.handle(
+            new winston.transports.File({
+                filename: path.join(this.logDir, 'rejections.log'),
+                format: logFormat,
+                maxsize: 10 * 1024 * 1024,
+                maxFiles: 5
+            })
+        );
+
+        // Add custom methods
+        this.addCustomMethods();
+        
+        this.info('🚀 Enhanced Logger v10.0 initialized');
+    }
+
+    addCustomMethods() {
+        // AI Analysis logging
+        this.logAIAnalysis = (analysis) => {
+            this.info('🧠 AI Analysis completed', {
+                type: 'ai_analysis',
+                threatLevel: analysis.threatLevel,
+                confidence: analysis.confidence,
+                language: analysis.language,
+                bypassDetected: analysis.bypassDetected,
+                processingTime: analysis.processingTime
+            });
+        };
+
+        // Moderation action logging
+        this.logModerationAction = (action, user, reason, details = {}) => {
+            this.warn('🛡️ Moderation action taken', {
+                type: 'moderation',
+                action: action,
+                user: user.tag || user.id,
+                reason: reason,
+                ...details
+            });
+        };
+
+        // Translation logging
+        this.logTranslation = (from, to, provider, responseTime) => {
+            this.info('🌍 Translation completed', {
+                type: 'translation',
+                from: from,
+                to: to,
+                provider: provider,
+                responseTime: responseTime
+            });
+        };
+
+        // API call logging
+        this.logAPICall = (api, endpoint, responseTime, success = true) => {
+            const level = success ? 'info' : 'warn';
+            this[level](`🔌 API call to ${api}`, {
+                type: 'api_call',
+                api: api,
+                endpoint: endpoint,
+                responseTime: responseTime,
+                success: success
+            });
+        };
+
+        // Performance logging
+        this.logPerformance = (operation, duration, details = {}) => {
+            const level = duration > 5000 ? 'warn' : 'info';
+            this[level](`⚡ Performance: ${operation}`, {
+                type: 'performance',
+                operation: operation,
+                duration: duration,
+                ...details
+            });
+        };
+
+        // Security event logging
+        this.logSecurityEvent = (event, severity, details = {}) => {
+            const level = severity === 'high' ? 'error' : severity === 'medium' ? 'warn' : 'info';
+            this[level](`🔒 Security event: ${event}`, {
+                type: 'security',
+                event: event,
+                severity: severity,
+                ...details
+            });
+        };
+    }
+
+    // Standard logging methods
+    error(message, meta = {}) {
+        this.logger.error(message, meta);
+    }
+
+    warn(message, meta = {}) {
+        this.logger.warn(message, meta);
+    }
+
+    info(message, meta = {}) {
+        this.logger.info(message, meta);
+    }
+
+    debug(message, meta = {}) {
+        this.logger.debug(message, meta);
+    }
+
+    // Health check method
+    healthCheck() {
+        try {
+            this.info('Logger health check passed');
+            return {
+                status: 'healthy',
+                logDir: this.logDir,
+                transports: this.logger.transports.length
+            };
+        } catch (error) {
+            return {
+                status: 'unhealthy',
+                error: error.message
+            };
+        }
+    }
+
+    // Get log statistics
+    getStats() {
+        const stats = {
+            logDir: this.logDir,
+            transports: this.logger.transports.length,
+            level: this.logger.level
+        };
+
+        try {
+            // Get file sizes
+            const files = ['combined.log', 'error.log', 'debug.log'];
+            stats.files = {};
+            
+            for (const file of files) {
+                const filePath = path.join(this.logDir, file);
+                if (fs.existsSync(filePath)) {
+                    const stat = fs.statSync(filePath);
+                    stats.files[file] = {
+                        size: stat.size,
+                        modified: stat.mtime
+                    };
                 }
             }
+        } catch (error) {
+            this.warn('Failed to get log file stats', { error: error.message });
         }
+
+        return stats;
     }
 
-    async logModeration(guild, action, user, reason, details = {}) {
-        const fields = [
-            { name: '👤 User', value: `${user.tag}\n${user.id}`, inline: true },
-            { name: '⚡ Action', value: action.toUpperCase(), inline: true },
-            { name: '🧠 AI System', value: `Enhanced Synthia v${config.aiVersion}`, inline: true },
-            { name: '📝 Reason', value: reason || 'No reason provided', inline: false }
-        ];
+    // Cleanup old logs
+    cleanup(daysToKeep = 30) {
+        try {
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
 
-        if (details.originalLanguage && details.originalLanguage !== 'English') {
-            fields.push(
-                { name: '🌍 Original Language', value: details.originalLanguage, inline: true },
-                { name: '🔄 Translation Provider', value: details.provider || 'Multi-API', inline: true }
-            );
-        }
+            const files = fs.readdirSync(this.logDir);
+            let deletedCount = 0;
 
-        if (details.elongatedWords && details.elongatedWords.length > 0) {
-            fields.push({
-                name: '🔍 Elongated Words Detected',
-                value: details.elongatedWords.map(w => `${w.original} → ${w.normalized}`).join('\n').slice(0, 1024),
-                inline: false
+            for (const file of files) {
+                const filePath = path.join(this.logDir, file);
+                const stat = fs.statSync(filePath);
+
+                if (stat.mtime < cutoffDate) {
+                    fs.unlinkSync(filePath);
+                    deletedCount++;
+                }
+            }
+
+            this.info(`Log cleanup completed`, {
+                deletedFiles: deletedCount,
+                daysToKeep: daysToKeep
             });
+
+            return deletedCount;
+        } catch (error) {
+            this.error('Log cleanup failed', { error: error.message });
+            return 0;
         }
-
-        await this.sendLog(
-            guild,
-            'moderation',
-            `⚖️ Enhanced Moderation: ${action.toUpperCase()}`,
-            `Multi-API enhanced moderation action taken`,
-            fields,
-            config.colors.moderation
-        );
-    }
-
-    async logTranslation(guild, originalText, translatedText, sourceLang, targetLang, user, provider, responseTime, isAutoTranslation = false) {
-        const fields = [
-            { name: '👤 User', value: `${user.tag} (${user.id})`, inline: true },
-            { name: '🌍 Translation', value: `${sourceLang} → ${targetLang}`, inline: true },
-            { name: '🔧 Provider', value: provider, inline: true },
-            { name: '⚡ Response Time', value: `${responseTime}ms`, inline: true },
-            { name: '🤖 Type', value: isAutoTranslation ? 'Auto-Translation' : 'Manual Translation', inline: true },
-            { name: '📝 Original Text', value: originalText.slice(0, 500), inline: false },
-            { name: '🌟 Translated Text', value: translatedText.slice(0, 500), inline: false }
-        ];
-
-        await this.sendLog(
-            guild,
-            'translation',
-            `🌍 Enhanced ${isAutoTranslation ? 'Auto-' : ''}Translation`,
-            `Advanced ${isAutoTranslation ? 'automatic ' : ''}translation with provider rotation`,
-            fields,
-            config.colors.translation
-        );
     }
 }
 
-module.exports = EnhancedDiscordLogger;
+// Export singleton instance
+module.exports = new EnhancedLogger();
