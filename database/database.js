@@ -1,63 +1,47 @@
-// Enterprise Database System v10.0 - database/database.js
-const { Sequelize, DataTypes, Op } = require('sequelize');
+const { Sequelize, DataTypes } = require('sequelize');
 const config = require('../config/enhanced-config.js');
-const logger = require('../logging/enhanced-logger.js');
-const path = require('path');
-const fs = require('fs').promises;
+const Logger = require('../logging/enhanced-logger.js');
 
 class Database {
     constructor() {
         this.sequelize = null;
         this.models = {};
-        this.isConnected = false;
-        this.connectionRetries = 0;
-        this.maxRetries = 5;
+        this.logger = new Logger('Database');
+        this.connected = false;
+        this.retryCount = 0;
+        this.maxRetries = 3;
     }
 
     async initialize() {
         try {
-            logger.info('🗄️ Initializing database connection...');
+            this.logger.info('Initializing database connection...');
             
-            const dbConfig = config.get('database');
-            
-            // Initialize Sequelize with appropriate dialect
-            this.sequelize = new Sequelize({
-                dialect: dbConfig.type,
-                host: dbConfig.host,
-                port: dbConfig.port,
-                database: dbConfig.name,
-                username: dbConfig.username,
-                password: dbConfig.password,
-                logging: dbConfig.logging ? (msg) => logger.debug(msg) : false,
-                pool: dbConfig.pool,
-                dialectOptions: {
-                    ssl: dbConfig.ssl ? {
-                        require: true,
-                        rejectUnauthorized: false
-                    } : false
-                },
-                define: {
-                    timestamps: true,
-                    underscored: true,
-                    paranoid: true // Soft deletes
-                },
-                benchmark: true,
-                logQueryParameters: dbConfig.logging
-            });
+            this.sequelize = new Sequelize(
+                config.database.database,
+                config.database.username,
+                config.database.password,
+                {
+                    host: config.database.host,
+                    port: config.database.port,
+                    dialect: config.database.dialect,
+                    logging: config.database.logging ? this.logger.debug.bind(this.logger) : false,
+                    pool: config.database.pool,
+                    retry: config.database.retry,
+                    dialectOptions: {
+                        charset: 'utf8mb4',
+                        collate: 'utf8mb4_unicode_ci'
+                    }
+                }
+            );
 
-            // Test connection
             await this.testConnection();
-            
-            // Define models
             await this.defineModels();
             
-            // Set up associations
-            this.setupAssociations();
-            
-            logger.info('✅ Database initialized successfully');
+            this.connected = true;
+            this.logger.info('Database initialized successfully');
             
         } catch (error) {
-            logger.error('💥 Database initialization failed:', error);
+            this.logger.error('Database initialization failed:', error);
             throw error;
         }
     }
@@ -65,26 +49,23 @@ class Database {
     async testConnection() {
         try {
             await this.sequelize.authenticate();
-            this.isConnected = true;
-            this.connectionRetries = 0;
-            logger.info('✅ Database connection established');
+            this.logger.info('Database connection established successfully');
         } catch (error) {
-            this.isConnected = false;
-            this.connectionRetries++;
+            this.logger.error('Unable to connect to database:', error);
             
-            if (this.connectionRetries < this.maxRetries) {
-                logger.warn(`⚠️ Database connection failed (attempt ${this.connectionRetries}/${this.maxRetries}). Retrying in 5 seconds...`);
+            if (this.retryCount < this.maxRetries) {
+                this.retryCount++;
+                this.logger.info(`Retrying connection (${this.retryCount}/${this.maxRetries})...`);
                 await new Promise(resolve => setTimeout(resolve, 5000));
                 return this.testConnection();
-            } else {
-                logger.error('💥 Database connection failed after max retries');
-                throw error;
             }
+            
+            throw error;
         }
     }
 
-    async defineModels() {
-        // Guild Model
+    defineModels() {
+        // Guilds Model
         this.models.Guild = this.sequelize.define('Guild', {
             id: {
                 type: DataTypes.STRING,
@@ -94,37 +75,33 @@ class Database {
                 type: DataTypes.STRING,
                 allowNull: false
             },
-            owner_id: {
+            ownerId: {
                 type: DataTypes.STRING,
                 allowNull: false
             },
-            member_count: {
+            memberCount: {
                 type: DataTypes.INTEGER,
                 defaultValue: 0
             },
             settings: {
-                type: DataTypes.JSONB,
+                type: DataTypes.JSON,
                 defaultValue: {}
             },
             features: {
-                type: DataTypes.ARRAY(DataTypes.STRING),
+                type: DataTypes.JSON,
                 defaultValue: []
             },
-            premium: {
-                type: DataTypes.BOOLEAN,
-                defaultValue: false
-            },
-            premium_expires: {
+            joinedAt: {
                 type: DataTypes.DATE,
-                allowNull: true
+                defaultValue: DataTypes.NOW
             },
-            status: {
-                type: DataTypes.ENUM('active', 'inactive', 'banned'),
-                defaultValue: 'active'
+            isActive: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: true
             }
         });
 
-        // User Model
+        // Users Model
         this.models.User = this.sequelize.define('User', {
             id: {
                 type: DataTypes.STRING,
@@ -136,69 +113,61 @@ class Database {
             },
             discriminator: {
                 type: DataTypes.STRING,
-                allowNull: false
+                allowNull: true
             },
             avatar: {
                 type: DataTypes.STRING,
                 allowNull: true
             },
-            bot: {
-                type: DataTypes.BOOLEAN,
-                defaultValue: false
-            },
-            system: {
-                type: DataTypes.BOOLEAN,
-                defaultValue: false
-            },
             profile: {
-                type: DataTypes.JSONB,
+                type: DataTypes.JSON,
                 defaultValue: {}
             },
             preferences: {
-                type: DataTypes.JSONB,
+                type: DataTypes.JSON,
                 defaultValue: {}
             },
-            risk_score: {
-                type: DataTypes.FLOAT,
-                defaultValue: 0.0
-            },
-            total_messages: {
-                type: DataTypes.INTEGER,
-                defaultValue: 0
-            },
-            total_violations: {
-                type: DataTypes.INTEGER,
-                defaultValue: 0
+            statistics: {
+                type: DataTypes.JSON,
+                defaultValue: {
+                    messagesCount: 0,
+                    commandsUsed: 0,
+                    moderationActions: 0
+                }
             },
             reputation: {
                 type: DataTypes.INTEGER,
-                defaultValue: 100
+                defaultValue: 0
             },
-            flags: {
-                type: DataTypes.ARRAY(DataTypes.STRING),
-                defaultValue: []
+            isBlacklisted: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: false
             },
-            status: {
-                type: DataTypes.ENUM('active', 'warned', 'restricted', 'banned'),
-                defaultValue: 'active'
+            firstSeen: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW
+            },
+            lastActive: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW
             }
         });
 
-        // Message Model
+        // Messages Model
         this.models.Message = this.sequelize.define('Message', {
             id: {
                 type: DataTypes.STRING,
                 primaryKey: true
             },
-            channel_id: {
+            guildId: {
                 type: DataTypes.STRING,
                 allowNull: false
             },
-            guild_id: {
+            channelId: {
                 type: DataTypes.STRING,
                 allowNull: false
             },
-            author_id: {
+            userId: {
                 type: DataTypes.STRING,
                 allowNull: false
             },
@@ -206,199 +175,143 @@ class Database {
                 type: DataTypes.TEXT,
                 allowNull: true
             },
-            embeds: {
-                type: DataTypes.JSONB,
-                defaultValue: []
-            },
-            attachments: {
-                type: DataTypes.JSONB,
-                defaultValue: []
-            },
-            reactions: {
-                type: DataTypes.JSONB,
-                defaultValue: []
-            },
-            edited: {
-                type: DataTypes.BOOLEAN,
-                defaultValue: false
-            },
-            edited_at: {
-                type: DataTypes.DATE,
-                allowNull: true
-            },
-            reply_to: {
-                type: DataTypes.STRING,
-                allowNull: true
-            },
-            thread_id: {
-                type: DataTypes.STRING,
-                allowNull: true
-            },
-            flags: {
-                type: DataTypes.INTEGER,
-                defaultValue: 0
-            }
-        });
-
-        // Analysis Model
-        this.models.Analysis = this.sequelize.define('Analysis', {
-            id: {
-                type: DataTypes.UUID,
-                defaultValue: DataTypes.UUIDV4,
-                primaryKey: true
-            },
-            message_id: {
-                type: DataTypes.STRING,
-                allowNull: false,
-                unique: true
-            },
-            language: {
-                type: DataTypes.STRING,
-                allowNull: false
+            analysis: {
+                type: DataTypes.JSON,
+                defaultValue: {}
             },
             sentiment: {
                 type: DataTypes.FLOAT,
                 allowNull: true
             },
-            toxicity_score: {
+            toxicity: {
                 type: DataTypes.FLOAT,
-                allowNull: false,
-                defaultValue: 0.0
+                allowNull: true
             },
-            threat_level: {
-                type: DataTypes.INTEGER,
-                allowNull: false,
-                defaultValue: 0
+            language: {
+                type: DataTypes.STRING,
+                allowNull: true
             },
-            confidence: {
-                type: DataTypes.FLOAT,
-                allowNull: false,
-                defaultValue: 0.0
-            },
-            categories: {
-                type: DataTypes.ARRAY(DataTypes.STRING),
+            flags: {
+                type: DataTypes.JSON,
                 defaultValue: []
             },
-            entities: {
-                type: DataTypes.JSONB,
+            attachments: {
+                type: DataTypes.JSON,
                 defaultValue: []
             },
-            bypass_detected: {
+            reactions: {
+                type: DataTypes.JSON,
+                defaultValue: []
+            },
+            isDeleted: {
                 type: DataTypes.BOOLEAN,
                 defaultValue: false
             },
-            bypass_methods: {
-                type: DataTypes.ARRAY(DataTypes.STRING),
-                defaultValue: []
-            },
-            ai_models_used: {
-                type: DataTypes.ARRAY(DataTypes.STRING),
-                defaultValue: []
-            },
-            processing_time: {
-                type: DataTypes.INTEGER,
-                allowNull: false
-            },
-            action_taken: {
-                type: DataTypes.ENUM('none', 'warn', 'delete', 'mute', 'ban'),
-                defaultValue: 'none'
-            },
-            metadata: {
-                type: DataTypes.JSONB,
-                defaultValue: {}
+            deletedAt: {
+                type: DataTypes.DATE,
+                allowNull: true
             }
         });
 
-        // Violation Model
-        this.models.Violation = this.sequelize.define('Violation', {
+        // Moderation Actions Model
+        this.models.ModerationAction = this.sequelize.define('ModerationAction', {
             id: {
                 type: DataTypes.UUID,
                 defaultValue: DataTypes.UUIDV4,
                 primaryKey: true
             },
-            user_id: {
+            guildId: {
                 type: DataTypes.STRING,
                 allowNull: false
             },
-            guild_id: {
+            userId: {
                 type: DataTypes.STRING,
                 allowNull: false
             },
-            message_id: {
+            moderatorId: {
                 type: DataTypes.STRING,
-                allowNull: true
+                allowNull: false
             },
             type: {
-                type: DataTypes.ENUM('spam', 'toxicity', 'harassment', 'hate_speech', 'threat', 'scam', 'other'),
+                type: DataTypes.ENUM('warn', 'mute', 'kick', 'ban', 'unban', 'timeout'),
                 allowNull: false
             },
-            severity: {
-                type: DataTypes.INTEGER,
-                allowNull: false
+            reason: {
+                type: DataTypes.TEXT,
+                allowNull: true
             },
-            action: {
-                type: DataTypes.ENUM('warn', 'delete', 'mute', 'ban', 'none'),
-                allowNull: false
+            evidence: {
+                type: DataTypes.JSON,
+                defaultValue: {}
             },
             duration: {
                 type: DataTypes.INTEGER,
                 allowNull: true
             },
-            reason: {
-                type: DataTypes.TEXT,
-                allowNull: false
-            },
-            moderator_id: {
-                type: DataTypes.STRING,
-                allowNull: true
-            },
-            automated: {
+            isActive: {
                 type: DataTypes.BOOLEAN,
                 defaultValue: true
             },
-            appealed: {
-                type: DataTypes.BOOLEAN,
-                defaultValue: false
-            },
-            appeal_reason: {
-                type: DataTypes.TEXT,
+            expiresAt: {
+                type: DataTypes.DATE,
                 allowNull: true
-            },
-            status: {
-                type: DataTypes.ENUM('active', 'expired', 'revoked', 'appealed'),
-                defaultValue: 'active'
-            },
-            metadata: {
-                type: DataTypes.JSONB,
-                defaultValue: {}
             }
         });
 
-        // Translation Model
+        // Analytics Events Model
+        this.models.AnalyticsEvent = this.sequelize.define('AnalyticsEvent', {
+            id: {
+                type: DataTypes.UUID,
+                defaultValue: DataTypes.UUIDV4,
+                primaryKey: true
+            },
+            guildId: {
+                type: DataTypes.STRING,
+                allowNull: true
+            },
+            userId: {
+                type: DataTypes.STRING,
+                allowNull: true
+            },
+            eventType: {
+                type: DataTypes.STRING,
+                allowNull: false
+            },
+            eventData: {
+                type: DataTypes.JSON,
+                defaultValue: {}
+            },
+            metadata: {
+                type: DataTypes.JSON,
+                defaultValue: {}
+            },
+            timestamp: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW
+            }
+        });
+
+        // Translations Model
         this.models.Translation = this.sequelize.define('Translation', {
             id: {
                 type: DataTypes.UUID,
                 defaultValue: DataTypes.UUIDV4,
                 primaryKey: true
             },
-            message_id: {
-                type: DataTypes.STRING,
-                allowNull: false
-            },
-            source_language: {
-                type: DataTypes.STRING,
-                allowNull: false
-            },
-            target_language: {
-                type: DataTypes.STRING,
-                allowNull: false
-            },
-            source_text: {
+            originalText: {
                 type: DataTypes.TEXT,
                 allowNull: false
             },
-            translated_text: {
+            translatedText: {
                 type: DataTypes.TEXT,
+                allowNull: false
+            },
+            sourceLang: {
+                type: DataTypes.STRING,
+                allowNull: false
+            },
+            targetLang: {
+                type: DataTypes.STRING,
                 allowNull: false
             },
             provider: {
@@ -407,134 +320,64 @@ class Database {
             },
             confidence: {
                 type: DataTypes.FLOAT,
-                allowNull: false
+                allowNull: true
             },
-            processing_time: {
+            usage: {
                 type: DataTypes.INTEGER,
-                allowNull: false
-            },
-            automatic: {
-                type: DataTypes.BOOLEAN,
-                defaultValue: false
-            },
-            cached: {
-                type: DataTypes.BOOLEAN,
-                defaultValue: false
+                defaultValue: 1
             }
         });
 
-        // Analytics Event Model
-        this.models.AnalyticsEvent = this.sequelize.define('AnalyticsEvent', {
+        // Plugin Data Model
+        this.models.PluginData = this.sequelize.define('PluginData', {
             id: {
                 type: DataTypes.UUID,
                 defaultValue: DataTypes.UUIDV4,
                 primaryKey: true
             },
-            event_type: {
+            guildId: {
+                type: DataTypes.STRING,
+                allowNull: true
+            },
+            pluginName: {
                 type: DataTypes.STRING,
                 allowNull: false
             },
-            guild_id: {
+            dataKey: {
                 type: DataTypes.STRING,
-                allowNull: true
+                allowNull: false
             },
-            user_id: {
-                type: DataTypes.STRING,
-                allowNull: true
+            dataValue: {
+                type: DataTypes.JSON,
+                allowNull: false
             },
-            channel_id: {
-                type: DataTypes.STRING,
-                allowNull: true
-            },
-            properties: {
-                type: DataTypes.JSONB,
-                defaultValue: {}
-            },
-            timestamp: {
+            expiresAt: {
                 type: DataTypes.DATE,
-                defaultValue: DataTypes.NOW
-            },
-            session_id: {
-                type: DataTypes.STRING,
                 allowNull: true
             }
         });
 
-        // Plugin Model
-        this.models.Plugin = this.sequelize.define('Plugin', {
+        // System Logs Model
+        this.models.SystemLog = this.sequelize.define('SystemLog', {
             id: {
                 type: DataTypes.UUID,
                 defaultValue: DataTypes.UUIDV4,
                 primaryKey: true
             },
-            name: {
-                type: DataTypes.STRING,
-                allowNull: false,
-                unique: true
+            level: {
+                type: DataTypes.ENUM('debug', 'info', 'warn', 'error'),
+                allowNull: false
             },
-            version: {
+            component: {
                 type: DataTypes.STRING,
                 allowNull: false
             },
-            description: {
+            message: {
                 type: DataTypes.TEXT,
-                allowNull: true
-            },
-            author: {
-                type: DataTypes.STRING,
-                allowNull: true
-            },
-            enabled: {
-                type: DataTypes.BOOLEAN,
-                defaultValue: false
-            },
-            config: {
-                type: DataTypes.JSONB,
-                defaultValue: {}
-            },
-            dependencies: {
-                type: DataTypes.ARRAY(DataTypes.STRING),
-                defaultValue: []
-            },
-            permissions: {
-                type: DataTypes.ARRAY(DataTypes.STRING),
-                defaultValue: []
-            },
-            install_date: {
-                type: DataTypes.DATE,
-                defaultValue: DataTypes.NOW
-            },
-            last_updated: {
-                type: DataTypes.DATE,
-                defaultValue: DataTypes.NOW
-            }
-        });
-
-        // Health Check Model
-        this.models.HealthCheck = this.sequelize.define('HealthCheck', {
-            id: {
-                type: DataTypes.UUID,
-                defaultValue: DataTypes.UUIDV4,
-                primaryKey: true
-            },
-            service: {
-                type: DataTypes.STRING,
                 allowNull: false
             },
-            status: {
-                type: DataTypes.ENUM('healthy', 'degraded', 'unhealthy'),
-                allowNull: false
-            },
-            response_time: {
-                type: DataTypes.INTEGER,
-                allowNull: true
-            },
-            error_message: {
-                type: DataTypes.TEXT,
-                allowNull: true
-            },
-            details: {
-                type: DataTypes.JSONB,
+            metadata: {
+                type: DataTypes.JSON,
                 defaultValue: {}
             },
             timestamp: {
@@ -543,402 +386,178 @@ class Database {
             }
         });
 
-        // System Metrics Model
-        this.models.SystemMetrics = this.sequelize.define('SystemMetrics', {
-            id: {
-                type: DataTypes.UUID,
-                defaultValue: DataTypes.UUIDV4,
-                primaryKey: true
-            },
-            cpu_usage: {
-                type: DataTypes.FLOAT,
-                allowNull: true
-            },
-            memory_usage: {
-                type: DataTypes.FLOAT,
-                allowNull: true
-            },
-            disk_usage: {
-                type: DataTypes.FLOAT,
-                allowNull: true
-            },
-            network_in: {
-                type: DataTypes.BIGINT,
-                allowNull: true
-            },
-            network_out: {
-                type: DataTypes.BIGINT,
-                allowNull: true
-            },
-            active_connections: {
-                type: DataTypes.INTEGER,
-                allowNull: true
-            },
-            queue_size: {
-                type: DataTypes.INTEGER,
-                allowNull: true
-            },
-            cache_hit_rate: {
-                type: DataTypes.FLOAT,
-                allowNull: true
-            },
-            error_rate: {
-                type: DataTypes.FLOAT,
-                allowNull: true
-            },
-            response_time: {
-                type: DataTypes.FLOAT,
-                allowNull: true
-            },
-            timestamp: {
-                type: DataTypes.DATE,
-                defaultValue: DataTypes.NOW
-            }
-        });
-
-        logger.info('✅ Database models defined');
+        // Define associations
+        this.defineAssociations();
+        
+        this.logger.info('Database models defined successfully');
     }
 
-    setupAssociations() {
-        const { Guild, User, Message, Analysis, Violation, Translation, AnalyticsEvent } = this.models;
+    defineAssociations() {
+        // User-Guild relationships
+        this.models.User.belongsToMany(this.models.Guild, { 
+            through: 'GuildMembers',
+            foreignKey: 'userId',
+            otherKey: 'guildId'
+        });
+        this.models.Guild.belongsToMany(this.models.User, { 
+            through: 'GuildMembers',
+            foreignKey: 'guildId',
+            otherKey: 'userId'
+        });
 
-        // Guild associations
-        Guild.hasMany(Message, { foreignKey: 'guild_id' });
-        Guild.hasMany(Violation, { foreignKey: 'guild_id' });
-        Guild.hasMany(AnalyticsEvent, { foreignKey: 'guild_id' });
+        // Message relationships
+        this.models.Message.belongsTo(this.models.User, { foreignKey: 'userId' });
+        this.models.Message.belongsTo(this.models.Guild, { foreignKey: 'guildId' });
 
-        // User associations
-        User.hasMany(Message, { foreignKey: 'author_id' });
-        User.hasMany(Violation, { foreignKey: 'user_id' });
-        User.hasMany(AnalyticsEvent, { foreignKey: 'user_id' });
+        // Moderation relationships
+        this.models.ModerationAction.belongsTo(this.models.User, { 
+            foreignKey: 'userId',
+            as: 'target'
+        });
+        this.models.ModerationAction.belongsTo(this.models.User, { 
+            foreignKey: 'moderatorId',
+            as: 'moderator'
+        });
+        this.models.ModerationAction.belongsTo(this.models.Guild, { foreignKey: 'guildId' });
 
-        // Message associations
-        Message.belongsTo(Guild, { foreignKey: 'guild_id' });
-        Message.belongsTo(User, { foreignKey: 'author_id' });
-        Message.hasOne(Analysis, { foreignKey: 'message_id' });
-        Message.hasMany(Translation, { foreignKey: 'message_id' });
-        Message.hasMany(Violation, { foreignKey: 'message_id' });
+        // Analytics relationships
+        this.models.AnalyticsEvent.belongsTo(this.models.User, { foreignKey: 'userId' });
+        this.models.AnalyticsEvent.belongsTo(this.models.Guild, { foreignKey: 'guildId' });
 
-        // Analysis associations
-        Analysis.belongsTo(Message, { foreignKey: 'message_id' });
-
-        // Violation associations
-        Violation.belongsTo(User, { foreignKey: 'user_id' });
-        Violation.belongsTo(Guild, { foreignKey: 'guild_id' });
-        Violation.belongsTo(Message, { foreignKey: 'message_id' });
-
-        // Translation associations
-        Translation.belongsTo(Message, { foreignKey: 'message_id' });
-
-        logger.info('✅ Database associations established');
+        // Plugin data relationships
+        this.models.PluginData.belongsTo(this.models.Guild, { foreignKey: 'guildId' });
     }
 
     async migrate() {
         try {
-            logger.info('🔄 Running database migrations...');
+            this.logger.info('Running database migrations...');
             
-            // Sync all models
             await this.sequelize.sync({ 
-                alter: config.isDevelopment(),
+                alter: process.env.NODE_ENV === 'development',
                 force: false 
             });
-
-            // Run custom migrations
-            await this.runCustomMigrations();
             
-            logger.info('✅ Database migrations completed');
+            this.logger.info('Database migrations completed successfully');
         } catch (error) {
-            logger.error('💥 Database migration failed:', error);
+            this.logger.error('Database migration failed:', error);
             throw error;
         }
     }
 
-    async runCustomMigrations() {
-        try {
-            const migrationsPath = path.join(__dirname, 'migrations');
-            const migrationFiles = await fs.readdir(migrationsPath).catch(() => []);
-            
-            for (const file of migrationFiles.sort()) {
-                if (file.endsWith('.js')) {
-                    logger.info(`Running migration: ${file}`);
-                    const migration = require(path.join(migrationsPath, file));
-                    await migration.up(this.sequelize.getQueryInterface(), DataTypes);
-                }
-            }
-        } catch (error) {
-            if (error.code !== 'ENOENT') {
-                throw error;
-            }
-        }
-    }
-
-    // Advanced query methods
-    async getGuildStats(guildId, timeframe = '24h') {
-        const timeMap = {
-            '1h': new Date(Date.now() - 60 * 60 * 1000),
-            '24h': new Date(Date.now() - 24 * 60 * 60 * 1000),
-            '7d': new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-            '30d': new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-        };
-
-        const since = timeMap[timeframe] || timeMap['24h'];
-
-        const [messageCount, violationCount, userCount] = await Promise.all([
-            this.models.Message.count({
-                where: {
-                    guild_id: guildId,
-                    created_at: { [Op.gte]: since }
-                }
-            }),
-            this.models.Violation.count({
-                where: {
-                    guild_id: guildId,
-                    created_at: { [Op.gte]: since }
-                }
-            }),
-            this.models.Message.count({
-                where: {
-                    guild_id: guildId,
-                    created_at: { [Op.gte]: since }
-                },
-                distinct: true,
-                col: 'author_id'
-            })
-        ]);
-
-        return {
-            messageCount,
-            violationCount,
-            userCount,
-            timeframe
-        };
-    }
-
-    async getUserProfile(userId) {
-        return this.models.User.findByPk(userId, {
-            include: [
-                {
-                    model: this.models.Violation,
-                    limit: 10,
-                    order: [['created_at', 'DESC']]
-                }
-            ]
-        });
-    }
-
-    async getTopViolators(guildId, limit = 10) {
-        return this.models.User.findAll({
-            include: [{
-                model: this.models.Violation,
-                where: { guild_id: guildId },
-                attributes: []
-            }],
-            attributes: [
-                'id',
-                'username',
-                'discriminator',
-                [this.sequelize.fn('COUNT', this.sequelize.col('Violations.id')), 'violationCount']
-            ],
-            group: ['User.id'],
-            order: [[this.sequelize.literal('violationCount'), 'DESC']],
-            limit
-        });
-    }
-
-    async getAnalyticsTrends(guildId, metric, timeframe = '7d') {
-        const timeMap = {
-            '1h': 'hour',
-            '24h': 'hour',
-            '7d': 'day',
-            '30d': 'day'
-        };
-
-        const interval = timeMap[timeframe] || 'day';
-
-        return this.models.AnalyticsEvent.findAll({
-            where: {
-                guild_id: guildId,
-                event_type: metric,
-                timestamp: {
-                    [Op.gte]: new Date(Date.now() - this.parseTimeframe(timeframe))
-                }
-            },
-            attributes: [
-                [this.sequelize.fn('DATE_TRUNC', interval, this.sequelize.col('timestamp')), 'period'],
-                [this.sequelize.fn('COUNT', '*'), 'count']
-            ],
-            group: ['period'],
-            order: [['period', 'ASC']]
-        });
-    }
-
-    parseTimeframe(timeframe) {
-        const map = {
-            '1h': 60 * 60 * 1000,
-            '24h': 24 * 60 * 60 * 1000,
-            '7d': 7 * 24 * 60 * 60 * 1000,
-            '30d': 30 * 24 * 60 * 60 * 1000
-        };
-        return map[timeframe] || map['24h'];
-    }
-
-    // Bulk operations
-    async bulkCreateMessages(messages) {
-        return this.models.Message.bulkCreate(messages, {
-            ignoreDuplicates: true,
-            updateOnDuplicate: ['content', 'edited', 'edited_at']
-        });
-    }
-
-    async bulkCreateAnalytics(events) {
-        return this.models.AnalyticsEvent.bulkCreate(events, {
-            ignoreDuplicates: true
-        });
-    }
-
-    // Maintenance operations
     async performMaintenance() {
         try {
-            logger.info('🔧 Performing database maintenance...');
-
-            const retentionDays = config.get('analytics.retention.messages');
-            const cutoffDate = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
-
-            // Clean old messages
-            const deletedMessages = await this.models.Message.destroy({
+            this.logger.info('Starting database maintenance...');
+            
+            // Clean old analytics events (older than 30 days)
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+            await this.models.AnalyticsEvent.destroy({
                 where: {
-                    created_at: { [Op.lt]: cutoffDate }
-                },
-                force: true
+                    timestamp: {
+                        [this.sequelize.Op.lt]: thirtyDaysAgo
+                    }
+                }
             });
 
-            // Clean old analytics events
-            const deletedEvents = await this.models.AnalyticsEvent.destroy({
+            // Clean old system logs (older than 14 days)
+            const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+            await this.models.SystemLog.destroy({
                 where: {
-                    timestamp: { [Op.lt]: cutoffDate }
-                },
-                force: true
+                    timestamp: {
+                        [this.sequelize.Op.lt]: fourteenDaysAgo
+                    }
+                }
             });
 
-            // Clean old health checks
-            const deletedHealthChecks = await this.models.HealthCheck.destroy({
+            // Clean expired plugin data
+            await this.models.PluginData.destroy({
                 where: {
-                    timestamp: { [Op.lt]: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
-                },
-                force: true
+                    expiresAt: {
+                        [this.sequelize.Op.lt]: new Date()
+                    }
+                }
             });
 
-            // Vacuum and analyze (PostgreSQL)
-            if (config.get('database.type') === 'postgres') {
-                await this.sequelize.query('VACUUM ANALYZE;');
-            }
-
-            logger.info(`✅ Database maintenance completed: ${deletedMessages} messages, ${deletedEvents} events, ${deletedHealthChecks} health checks deleted`);
-
-        } catch (error) {
-            logger.error('💥 Database maintenance failed:', error);
-            throw error;
-        }
-    }
-
-    // Health check
-    async healthCheck() {
-        try {
-            const start = Date.now();
-            await this.sequelize.authenticate();
-            const responseTime = Date.now() - start;
-
-            return {
-                status: 'healthy',
-                responseTime,
-                connected: this.isConnected,
-                poolSize: this.sequelize.connectionManager.pool.size,
-                activeConnections: this.sequelize.connectionManager.pool.used,
-                idleConnections: this.sequelize.connectionManager.pool.available
-            };
-        } catch (error) {
-            return {
-                status: 'unhealthy',
-                error: error.message,
-                connected: false
-            };
-        }
-    }
-
-    // Backup operations
-    async createBackup() {
-        try {
-            logger.info('💾 Creating database backup...');
-            
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const backupPath = path.join(__dirname, '..', 'backups', `backup-${timestamp}.sql`);
-            
-            // Ensure backup directory exists
-            await fs.mkdir(path.dirname(backupPath), { recursive: true });
-            
-            if (config.get('database.type') === 'postgres') {
-                const { spawn } = require('child_process');
-                const pg_dump = spawn('pg_dump', [
-                    '-h', config.get('database.host'),
-                    '-p', config.get('database.port'),
-                    '-U', config.get('database.username'),
-                    '-d', config.get('database.name'),
-                    '-f', backupPath
-                ]);
-                
-                return new Promise((resolve, reject) => {
-                    pg_dump.on('exit', (code) => {
-                        if (code === 0) {
-                            logger.info(`✅ Database backup created: ${backupPath}`);
-                            resolve(backupPath);
-                        } else {
-                            reject(new Error(`pg_dump exited with code ${code}`));
+            // Update user activity status
+            const oneMonthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+            await this.models.User.update(
+                { isBlacklisted: false },
+                {
+                    where: {
+                        lastActive: {
+                            [this.sequelize.Op.gte]: oneMonthAgo
                         }
-                    });
-                });
-            } else {
-                // SQLite backup
-                const sqlite3 = require('sqlite3');
-                const db = new sqlite3.Database(config.get('database.name'));
-                
-                return new Promise((resolve, reject) => {
-                    db.backup(backupPath, (err) => {
-                        if (err) {
-                            reject(err);
-                        } else {
-                            logger.info(`✅ Database backup created: ${backupPath}`);
-                            resolve(backupPath);
-                        }
-                        db.close();
-                    });
-                });
-            }
+                    }
+                }
+            );
+
+            this.logger.info('Database maintenance completed successfully');
         } catch (error) {
-            logger.error('💥 Database backup failed:', error);
-            throw error;
+            this.logger.error('Database maintenance failed:', error);
         }
     }
 
-    // Close connection
+    async getGuild(guildId) {
+        return await this.models.Guild.findByPk(guildId);
+    }
+
+    async getUser(userId) {
+        return await this.models.User.findByPk(userId);
+    }
+
+    async getUserStats(userId, guildId = null) {
+        const where = { userId };
+        if (guildId) where.guildId = guildId;
+
+        const messageCount = await this.models.Message.count({ where });
+        const moderationActions = await this.models.ModerationAction.count({ where });
+        
+        return {
+            messageCount,
+            moderationActions,
+            lastActive: await this.getLastActivity(userId, guildId)
+        };
+    }
+
+    async getLastActivity(userId, guildId = null) {
+        const where = { userId };
+        if (guildId) where.guildId = guildId;
+
+        const lastMessage = await this.models.Message.findOne({
+            where,
+            order: [['createdAt', 'DESC']]
+        });
+
+        return lastMessage ? lastMessage.createdAt : null;
+    }
+
+    async logAnalyticsEvent(eventType, data, userId = null, guildId = null) {
+        return await this.models.AnalyticsEvent.create({
+            eventType,
+            eventData: data,
+            userId,
+            guildId
+        });
+    }
+
     async close() {
         if (this.sequelize) {
+            this.logger.info('Closing database connection...');
             await this.sequelize.close();
-            this.isConnected = false;
-            logger.info('🔒 Database connection closed');
+            this.connected = false;
+            this.logger.info('Database connection closed');
         }
     }
 
-    // Getters
+    isConnected() {
+        return this.connected;
+    }
+
     getSequelize() {
         return this.sequelize;
     }
 
     getModels() {
         return this.models;
-    }
-
-    isHealthy() {
-        return this.isConnected;
     }
 }
 
