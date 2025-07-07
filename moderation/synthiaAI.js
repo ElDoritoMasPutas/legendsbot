@@ -1,740 +1,1207 @@
-// Enhanced Synthia AI Brain v9.0 - WITH MULTI-API DECISION ENGINE INTEGRATION
-const fs = require('fs').promises;
-const config = require('../config/config.js');
-const MultiAPIDecisionEngine = require('../decisions/decisions.js');
+// Enhanced AI System v10.0 - ai/enhanced-synthia-ai.js
+const tf = require('@tensorflow/tfjs-node');
+const natural = require('natural');
+const sentiment = require('sentiment');
+const compromise = require('compromise');
+const { franc } = require('franc');
+const OpenAI = require('openai');
+const { TextAnalyticsClient, AzureKeyCredential } = require('@azure/cognitiveservices-textanalytics');
+const { HfInference } = require('@huggingface/inference');
+const config = require('../config/enhanced-config.js');
+const logger = require('../logging/enhanced-logger.js');
+const EventEmitter = require('events');
 
-class EnhancedSynthiaAI {
-    constructor(synthiaTranslator, discordLogger) {
-        this.synthiaTranslator = synthiaTranslator;
-        this.discordLogger = discordLogger;
-        this.profiles = new Map();
-        this.dataPath = 'data/enhanced_profiles.json';
+class EnhancedSynthiaAI extends EventEmitter {
+    constructor(database, cache, mlPipeline) {
+        super();
+        this.database = database;
+        this.cache = cache;
+        this.mlPipeline = mlPipeline;
         
-        // Initialize Multi-API Decision Engine
-        this.decisionEngine = new MultiAPIDecisionEngine();
+        // AI Providers
+        this.openai = null;
+        this.huggingface = null;
+        this.azure = null;
+        this.googleCloud = null;
         
-        this.loadData();
+        // Local Models
+        this.toxicityModel = null;
+        this.sentimentModel = null;
+        this.languageModel = null;
+        this.bypassDetectionModel = null;
+        
+        // Analysis Components
+        this.tokenizer = null;
+        this.stemmer = null;
+        this.classifier = null;
+        
+        // Statistics
+        this.stats = {
+            totalAnalyses: 0,
+            toxicDetected: 0,
+            bypassDetected: 0,
+            translationsRequested: 0,
+            moderationActions: 0,
+            accuracy: 0,
+            falsePositives: 0,
+            falseNegatives: 0,
+            averageProcessingTime: 0
+        };
+        
+        // Configuration
+        this.pokemonProtection = config.get('moderation.pokemon.protection');
+        this.bypassDetectionEnabled = config.get('moderation.bypassDetection.enabled');
+        this.aiProviders = config.get('ai');
+        
+        // Pokemon content patterns
+        this.pokemonPatterns = this.initializePokemonPatterns();
+        
+        // Bypass detection patterns
+        this.bypassPatterns = this.initializeBypassPatterns();
+        
+        // Performance tracking
+        this.performanceMetrics = {
+            processingTimes: [],
+            accuracyScores: [],
+            confidenceScores: [],
+            lastOptimization: Date.now()
+        };
     }
 
-    async loadData() {
+    async initialize() {
         try {
-            await fs.mkdir('data', { recursive: true });
-            const data = await fs.readFile(this.dataPath, 'utf8');
-            const parsed = JSON.parse(data);
-            this.profiles = new Map(parsed.profiles || []);
-            console.log(`✅ Loaded ${this.profiles.size} enhanced profiles with Multi-API decision engine`);
-        } catch (error) {
-            console.log('📁 Creating fresh enhanced profiles with Multi-API decision engine...');
-            await this.saveData();
-        }
-    }
-
-    async saveData() {
-        try {
-            const data = {
-                profiles: Array.from(this.profiles.entries()),
-                version: '9.0',
-                lastUpdated: Date.now(),
-                multiApiEnabled: true,
-                enhancedModeration: true,
-                bypassDetectionEnabled: true,
-                pokemonAware: true,
-                multiApiDecisionEngine: true
-            };
+            logger.info('🧠 Initializing Enhanced Synthia AI...');
             
-            await fs.writeFile(this.dataPath, JSON.stringify(data, null, 2));
+            // Initialize AI providers
+            await this.initializeProviders();
+            
+            // Load pre-trained models
+            await this.loadModels();
+            
+            // Initialize NLP components
+            await this.initializeNLP();
+            
+            // Setup performance monitoring
+            this.setupPerformanceMonitoring();
+            
+            // Load training data
+            await this.loadTrainingData();
+            
+            logger.info('✅ Enhanced Synthia AI initialized successfully');
+            
         } catch (error) {
-            console.error('❌ Failed to save enhanced data:', error);
+            logger.error('💥 Enhanced Synthia AI initialization failed:', error);
+            throw error;
         }
     }
 
-    // COMPREHENSIVE: Pokemon content detection - UNCHANGED
-    isPokemonRelatedContent(text) {
-        const lowerContent = text.toLowerCase().trim();
-        
-        // 1. Pokemon file extensions
-        const pokemonFilePattern = /\.(pk[3-9]|pb[78]|pa[78]|pkm|3gpkm|ck3|bk4|rk4|sk2|xk3)(\s|$)/i;
-        if (pokemonFilePattern.test(text)) {
-            return true;
+    async initializeProviders() {
+        // OpenAI
+        if (this.aiProviders.openai.apiKey) {
+            this.openai = new OpenAI({
+                apiKey: this.aiProviders.openai.apiKey,
+                timeout: this.aiProviders.openai.timeout
+            });
+            logger.info('✅ OpenAI initialized');
         }
-        
-        // 2. Pokemon trading codes (.trade followed by numbers)
-        const tradingCodePattern = /\.trade\s+\d{4,8}/i;
-        if (tradingCodePattern.test(text)) {
-            return true;
+
+        // Hugging Face
+        if (this.aiProviders.huggingface.apiKey) {
+            this.huggingface = new HfInference(this.aiProviders.huggingface.apiKey);
+            logger.info('✅ Hugging Face initialized');
         }
-        
-        // 3. Pokemon mystery egg and .me commands (.me or .mysteryegg followed by numbers)
-        const meCommandPattern = /\.me\s+\d{4,8}/i;
-        const mysteryeggPattern = /\.mysteryegg\s+\d{4,8}/i;
-        if (meCommandPattern.test(text) || mysteryeggPattern.test(text)) {
-            return true;
+
+        // Azure Cognitive Services
+        if (this.aiProviders.azure.apiKey) {
+            this.azure = new TextAnalyticsClient(
+                this.aiProviders.azure.endpoint,
+                new AzureKeyCredential(this.aiProviders.azure.apiKey)
+            );
+            logger.info('✅ Azure Cognitive Services initialized');
         }
-        
-        // 4. Pokemon battle team commands
-        if (lowerContent.includes('.bt ') || lowerContent.includes('.pokepaste')) {
-            return true;
+
+        // Google Cloud AI (requires service account)
+        if (this.aiProviders.googleCloud.projectId) {
+            try {
+                const { LanguageServiceClient } = require('@google-cloud/language');
+                this.googleCloud = new LanguageServiceClient({
+                    projectId: this.aiProviders.googleCloud.projectId,
+                    keyFilename: this.aiProviders.googleCloud.keyFilename
+                });
+                logger.info('✅ Google Cloud AI initialized');
+            } catch (error) {
+                logger.warn('⚠️ Google Cloud AI not available:', error.message);
+            }
         }
+    }
+
+    async loadModels() {
+        try {
+            const modelPath = this.aiProviders.localModels.path;
+            
+            // Load toxicity detection model
+            try {
+                this.toxicityModel = await tf.loadLayersModel(`file://${modelPath}/toxicity/model.json`);
+                logger.info('✅ Toxicity model loaded');
+            } catch (error) {
+                logger.warn('⚠️ Local toxicity model not found, will use remote APIs');
+            }
+
+            // Load sentiment analysis model
+            try {
+                this.sentimentModel = await tf.loadLayersModel(`file://${modelPath}/sentiment/model.json`);
+                logger.info('✅ Sentiment model loaded');
+            } catch (error) {
+                logger.warn('⚠️ Local sentiment model not found, using fallback');
+            }
+
+            // Load language detection model
+            try {
+                this.languageModel = await tf.loadLayersModel(`file://${modelPath}/language/model.json`);
+                logger.info('✅ Language detection model loaded');
+            } catch (error) {
+                logger.warn('⚠️ Local language model not found, using franc');
+            }
+
+            // Load bypass detection model
+            try {
+                this.bypassDetectionModel = await tf.loadLayersModel(`file://${modelPath}/bypass/model.json`);
+                logger.info('✅ Bypass detection model loaded');
+            } catch (error) {
+                logger.warn('⚠️ Local bypass detection model not found, using rule-based');
+            }
+
+        } catch (error) {
+            logger.warn('⚠️ Model loading failed, using fallback methods:', error.message);
+        }
+    }
+
+    async initializeNLP() {
+        // Initialize tokenizer
+        this.tokenizer = new natural.WordTokenizer();
         
-        // 5. Pokemon stat terminology
-        const pokemonTerms = [
-            'shiny:', 'level:', 'ball:', 'ability:', 'nature:', 'evs:', 'ivs:', 'moves:', 'item:',
-            'tera type:', 'hidden power:', 'happiness:', 'ot:', 'tid:', 'gigantamax:',
-            'metlocation=', 'dusk ball', 'poke ball', 'ultra ball', 'master ball', 'beast ball',
-            'adamant', 'modest', 'jolly', 'timid', 'bold', 'impish', 'careful', 'calm',
-            'hasty', 'naive', 'serious', 'hardy', 'lonely', 'brave', 'relaxed', 'quiet',
-            'hp:', 'attack:', 'defense:', 'sp. atk:', 'sp. def:', 'speed:', '.me', '.mysteryegg'
-        ];
+        // Initialize stemmer
+        this.stemmer = natural.PorterStemmer;
         
-        const pokemonTermCount = pokemonTerms.filter(term => lowerContent.includes(term)).length;
+        // Initialize classifier
+        this.classifier = new natural.BayesClassifier();
         
-        // 6. Common Pokemon names
-        const commonPokemonNames = [
-            'charizard', 'pikachu', 'mewtwo', 'mew', 'rayquaza', 'arceus', 'dialga', 'palkia',
-            'giratina', 'kyogre', 'groudon', 'lugia', 'ho-oh', 'celebi', 'jirachi', 'deoxys',
-            'darkrai', 'shaymin', 'victini', 'keldeo', 'meloetta', 'genesect', 'diancie',
-            'hoopa', 'volcanion', 'magearna', 'marshadow', 'zeraora', 'meltan', 'melmetal',
-            'zarude', 'calyrex', 'regidrago', 'regieleki', 'glastrier', 'spectrier',
-            'eevee', 'vaporeon', 'jolteon', 'flareon', 'espeon', 'umbreon', 'leafeon',
-            'glaceon', 'sylveon', 'lucario', 'garchomp', 'dragapult', 'mimikyu', 'toxapex',
-            'ferrothorn', 'rotom', 'landorus', 'thundurus', 'tornadus', 'reshiram', 'zekrom',
-            'kyurem', 'xerneas', 'yveltal', 'zygarde', 'solgaleo', 'lunala', 'necrozma',
-            'zacian', 'zamazenta', 'eternatus', 'koraidon', 'miraidon', 'gimmighoul', 'gholdengo'
-        ];
+        // Load stopwords for multiple languages
+        this.stopwords = {
+            en: natural.stopwords,
+            es: require('stopword/dist/stopword.es.json'),
+            fr: require('stopword/dist/stopword.fr.json'),
+            de: require('stopword/dist/stopword.de.json'),
+            it: require('stopword/dist/stopword.it.json'),
+            pt: require('stopword/dist/stopword.pt.json'),
+            ru: require('stopword/dist/stopword.ru.json'),
+            ja: require('stopword/dist/stopword.ja.json'),
+            zh: require('stopword/dist/stopword.zh.json')
+        };
         
-        const pokemonNameCount = commonPokemonNames.filter(name => lowerContent.includes(name)).length;
+        logger.info('✅ NLP components initialized');
+    }
+
+    initializePokemonPatterns() {
+        return {
+            fileExtensions: /\.(pk[3-9]|pb[78]|pa[78]|pkm|3gpkm|ck3|bk4|rk4|sk2|xk3)(\s|$)/i,
+            tradingCodes: /\.trade\s+\d{4,8}/i,
+            mysteryEgg: /\.(me|mysteryegg)\s+\d{4,8}/i,
+            battleTeam: /\.bt\s+/i,
+            pokepaste: /\.pokepaste/i,
+            
+            terms: [
+                'shiny', 'level', 'ball', 'ability', 'nature', 'evs', 'ivs', 'moves', 'item',
+                'tera type', 'hidden power', 'happiness', 'ot', 'tid', 'gigantamax',
+                'metlocation', 'dusk ball', 'poke ball', 'ultra ball', 'master ball', 'beast ball'
+            ],
+            
+            natures: [
+                'adamant', 'modest', 'jolly', 'timid', 'bold', 'impish', 'careful', 'calm',
+                'hasty', 'naive', 'serious', 'hardy', 'lonely', 'brave', 'relaxed', 'quiet'
+            ],
+            
+            pokemon: [
+                'charizard', 'pikachu', 'mewtwo', 'mew', 'rayquaza', 'arceus', 'dialga', 'palkia',
+                'giratina', 'kyogre', 'groudon', 'lugia', 'ho-oh', 'celebi', 'jirachi', 'deoxys',
+                'eevee', 'vaporeon', 'jolteon', 'flareon', 'espeon', 'umbreon', 'leafeon',
+                'glaceon', 'sylveon', 'lucario', 'garchomp', 'dragapult', 'mimikyu', 'toxapex'
+            ]
+        };
+    }
+
+    initializeBypassPatterns() {
+        return {
+            characterSubstitution: new Map([
+                ['@', 'a'], ['4', 'a'], ['∆', 'a'], ['α', 'a'], ['а', 'a'],
+                ['8', 'b'], ['ß', 'b'], ['6', 'b'], ['β', 'b'], ['ь', 'b'],
+                ['¢', 'c'], ['©', 'c'], ['(', 'c'], ['[', 'c'], ['с', 'c'],
+                ['0', 'o'], ['°', 'o'], ['ο', 'o'], ['σ', 'o'], ['о', 'o'],
+                ['1', 'i'], ['!', 'i'], ['|', 'i'], ['ι', 'i'], ['і', 'i'],
+                ['3', 'e'], ['€', 'e'], ['£', 'e'], ['ε', 'e'], ['е', 'e'],
+                ['5', 's'], ['$', 's'], ['§', 's'], ['ς', 's'], ['ѕ', 's'],
+                ['7', 't'], ['+', 't'], ['†', 't'], ['τ', 't'], ['т', 't']
+            ]),
+            
+            separators: [
+                ' ', '.', '-', '_', '*', '/', '\\', '|', '+', '=', 
+                '~', '`', '^', ':', ';', ',', '!', '?', '#', '%', 
+                '&', '(', ')', '[', ']', '{', '}', '<', '>', '"', "'", '°', '•', '·'
+            ],
+            
+            elongationPattern: /(.)\1{2,}/gi,
+            spacingPattern: /\b([a-zA-Z])\s+(?=[a-zA-Z])/g,
+            separatorPattern: /([a-zA-Z])([.*_\-/\\|+~^]+)([a-zA-Z])/gi,
+            unicodePattern: /[^\x00-\x7F]/g
+        };
+    }
+
+    setupPerformanceMonitoring() {
+        // Monitor processing times
+        setInterval(() => {
+            this.optimizePerformance();
+        }, 300000); // Every 5 minutes
+
+        // Track accuracy metrics
+        this.on('analysisComplete', (result) => {
+            this.updatePerformanceMetrics(result);
+        });
+    }
+
+    async loadTrainingData() {
+        try {
+            // Load labeled training data from database
+            const trainingData = await this.database.models.Analysis.findAll({
+                where: {
+                    action_taken: { [this.database.sequelize.Op.ne]: 'none' }
+                },
+                limit: 10000,
+                order: [['created_at', 'DESC']]
+            });
+
+            // Train classifier with existing data
+            for (const data of trainingData) {
+                const features = await this.extractFeatures(data.message?.content || '');
+                this.classifier.addDocument(features, data.action_taken);
+            }
+
+            if (trainingData.length > 0) {
+                this.classifier.train();
+                logger.info(`✅ Trained classifier with ${trainingData.length} examples`);
+            }
+
+        } catch (error) {
+            logger.warn('⚠️ Could not load training data:', error.message);
+        }
+    }
+
+    async analyzeMessage(message, options = {}) {
+        const startTime = Date.now();
         
-        // 7. Competitive Pokemon formats
-        const competitiveTerms = [
-            'ou', 'uu', 'ru', 'nu', 'pu', 'ubers', 'ag', 'vgc', 'bss', 'doubles',
-            'smogon', 'showdown', 'teambuilder', 'tier', 'ban list', 'usage stats'
-        ];
-        const competitiveTermCount = competitiveTerms.filter(term => lowerContent.includes(term)).length;
+        try {
+            this.stats.totalAnalyses++;
+            
+            // Extract message content
+            const content = message.content || '';
+            const author = message.author || message.user;
+            const guild = message.guild;
+            const channel = message.channel;
+            
+            // Initialize analysis result
+            const analysis = {
+                messageId: message.id,
+                content: content,
+                timestamp: new Date(),
+                
+                // Content analysis
+                language: null,
+                toxicityScore: 0,
+                sentimentScore: 0,
+                threatLevel: 0,
+                confidence: 0,
+                
+                // Detection results
+                categories: [],
+                entities: [],
+                keywords: [],
+                
+                // Pokemon protection
+                isPokemonContent: false,
+                pokemonProtected: false,
+                
+                // Bypass detection
+                bypassDetected: false,
+                bypassMethods: [],
+                originalText: content,
+                normalizedText: content.toLowerCase(),
+                
+                // AI providers used
+                aiModelsUsed: [],
+                apiResponses: {},
+                
+                // Decision
+                requiresModeration: false,
+                recommendedAction: 'none',
+                reason: '',
+                
+                // Metadata
+                processingTime: 0,
+                cacheHit: false,
+                version: '10.0'
+            };
+
+            // Check cache first
+            const cacheKey = `analysis:${this.hashContent(content)}`;
+            const cached = await this.cache.get(cacheKey);
+            if (cached && !options.skipCache) {
+                analysis.cacheHit = true;
+                analysis.processingTime = Date.now() - startTime;
+                this.emit('analysisComplete', analysis);
+                return { ...cached, processingTime: analysis.processingTime, cacheHit: true };
+            }
+
+            // Step 1: Pokemon content protection
+            if (this.pokemonProtection) {
+                analysis.isPokemonContent = this.detectPokemonContent(content);
+                if (analysis.isPokemonContent) {
+                    analysis.pokemonProtected = true;
+                    analysis.confidence = 100;
+                    analysis.reason = 'Pokemon content detected - whitelisted';
+                    analysis.processingTime = Date.now() - startTime;
+                    
+                    await this.cache.set(cacheKey, analysis, 3600); // Cache for 1 hour
+                    this.emit('analysisComplete', analysis);
+                    return analysis;
+                }
+            }
+
+            // Step 2: Language detection
+            analysis.language = await this.detectLanguage(content);
+
+            // Step 3: Bypass detection
+            if (this.bypassDetectionEnabled) {
+                const bypassResult = await this.detectBypass(content);
+                analysis.bypassDetected = bypassResult.detected;
+                analysis.bypassMethods = bypassResult.methods;
+                analysis.normalizedText = bypassResult.normalizedText;
+            }
+
+            // Step 4: Content analysis with multiple AI providers
+            const contentAnalysis = await this.analyzeContentWithProviders(
+                analysis.normalizedText || content,
+                analysis.language
+            );
+            
+            // Merge AI results
+            analysis.toxicityScore = contentAnalysis.toxicityScore;
+            analysis.sentimentScore = contentAnalysis.sentimentScore;
+            analysis.threatLevel = contentAnalysis.threatLevel;
+            analysis.confidence = contentAnalysis.confidence;
+            analysis.categories = contentAnalysis.categories;
+            analysis.entities = contentAnalysis.entities;
+            analysis.keywords = contentAnalysis.keywords;
+            analysis.aiModelsUsed = contentAnalysis.modelsUsed;
+            analysis.apiResponses = contentAnalysis.apiResponses;
+
+            // Step 5: Apply bypass penalties
+            if (analysis.bypassDetected && analysis.toxicityScore > 0) {
+                const penalty = config.get('moderation.bypassDetection.penalty');
+                analysis.toxicityScore += penalty;
+                analysis.threatLevel = Math.min(10, analysis.threatLevel + Math.ceil(penalty));
+                analysis.reason += ` | Bypass penalty applied (+${penalty})`;
+            }
+
+            // Step 6: Determine moderation action
+            const moderationResult = this.determineModerationAction(analysis);
+            analysis.requiresModeration = moderationResult.required;
+            analysis.recommendedAction = moderationResult.action;
+            analysis.reason = moderationResult.reason;
+
+            // Step 7: Extract additional insights
+            await this.extractInsights(analysis, message);
+
+            // Step 8: Update statistics
+            this.updateStatistics(analysis);
+
+            // Step 9: Save to database
+            await this.saveAnalysis(analysis, message);
+
+            // Cache result
+            analysis.processingTime = Date.now() - startTime;
+            await this.cache.set(cacheKey, analysis, 1800); // Cache for 30 minutes
+
+            this.emit('analysisComplete', analysis);
+            return analysis;
+
+        } catch (error) {
+            logger.error('💥 Message analysis failed:', error);
+            
+            // Return safe fallback
+            return {
+                messageId: message.id,
+                error: error.message,
+                toxicityScore: 0,
+                threatLevel: 0,
+                confidence: 0,
+                requiresModeration: false,
+                recommendedAction: 'none',
+                processingTime: Date.now() - startTime
+            };
+        }
+    }
+
+    detectPokemonContent(content) {
+        const lowerContent = content.toLowerCase().trim();
         
-        // COMPREHENSIVE: Multiple detection criteria
+        // File extensions
+        if (this.pokemonPatterns.fileExtensions.test(content)) return true;
+        
+        // Trading codes
+        if (this.pokemonPatterns.tradingCodes.test(content)) return true;
+        
+        // Mystery egg commands
+        if (this.pokemonPatterns.mysteryEgg.test(content)) return true;
+        
+        // Battle team commands
+        if (this.pokemonPatterns.battleTeam.test(content)) return true;
+        
+        // Pokepaste links
+        if (this.pokemonPatterns.pokepaste.test(content)) return true;
+        
+        // Count Pokemon-related terms
+        const termCount = this.pokemonPatterns.terms.filter(term => 
+            lowerContent.includes(term)
+        ).length;
+        
+        const pokemonCount = this.pokemonPatterns.pokemon.filter(pokemon => 
+            lowerContent.includes(pokemon)
+        ).length;
+        
+        const natureCount = this.pokemonPatterns.natures.filter(nature => 
+            lowerContent.includes(nature)
+        ).length;
+        
+        // Comprehensive detection logic
         return (
-            pokemonTermCount >= 2 || // Has Pokemon stats/terms
-            (lowerContent.includes('.trade') && pokemonTermCount >= 1) || // .trade with Pokemon terms
-            (lowerContent.includes('.trade') && pokemonNameCount >= 1) || // .trade with Pokemon names
-            (lowerContent.includes('.trade') && competitiveTermCount >= 1) || // .trade with competitive terms
-            (lowerContent.includes('.me') && pokemonTermCount >= 1) || // .me with Pokemon terms
-            (lowerContent.includes('.me') && pokemonNameCount >= 1) || // .me with Pokemon names
-            (lowerContent.includes('.mysteryegg') && pokemonTermCount >= 1) || // .mysteryegg with Pokemon terms
-            (lowerContent.includes('.mysteryegg') && pokemonNameCount >= 1) || // .mysteryegg with Pokemon names
-            (lowerContent.includes('.bt') && pokemonTermCount >= 1) || // Battle team command
-            (lowerContent.includes('.pokepaste') && lowerContent.includes('pokepast.es')) // Pokepaste links
+            termCount >= 2 ||
+            pokemonCount >= 1 ||
+            natureCount >= 1 ||
+            (lowerContent.includes('.trade') && (termCount >= 1 || pokemonCount >= 1)) ||
+            (lowerContent.includes('.me') && (termCount >= 1 || pokemonCount >= 1)) ||
+            (lowerContent.includes('.bt') && termCount >= 1)
         );
     }
 
-    // ENHANCED: Complete analysis with Multi-API Decision Engine
-    async analyzeMessage(content, author, channel, message) {
-        const startTime = Date.now();
-        
-        const analysis = {
-            threatLevel: 0,
-            violationType: null,
-            confidence: 0,
-            reasoning: [],
-            action: 'none',
-            language: {
-                detected: 'en',
-                confidence: 100,
-                original: content,
-                translated: content,
-                originalLanguage: 'English'
-            },
-            culturalContext: {},
-            elongatedWords: [],
-            bypassAttempts: [],
-            bypassDetected: false,
-            normalizedText: null,
-            toxicityScore: 0,
-            processingTime: 0,
-            multiApiUsed: false,
-            decisionEngineUsed: false,
-            apiResults: null
-        };
-
+    async detectLanguage(content) {
         try {
-            // Skip analysis for very short messages
-            if (content.length < 2) {
-                analysis.processingTime = Date.now() - startTime;
-                return analysis;
-            }
-
-            const lowerContent = content.toLowerCase().trim();
-
-            // Skip very basic gaming terms
-            const basicGameTerms = ['gg', 'wp', 'gl hf', 'good game', 'well played'];
-            if (basicGameTerms.includes(lowerContent) && content.length < 15) {
-                analysis.processingTime = Date.now() - startTime;
-                return analysis;
-            }
-
-            // FIRST PRIORITY: Pokemon content detection
-            if (this.isPokemonRelatedContent(content)) {
-                console.log(`🎮 POKEMON CONTENT DETECTED - skipping all analysis: "${content.slice(0, 50)}..."`);
-                
-                let reason = 'Pokemon content detected - whitelisted';
-                if (/\.(pk[3-9]|pb[78]|pa[78]|pkm|3gpkm|ck3|bk4|rk4|sk2|xk3)(\s|$)/i.test(content)) {
-                    reason = 'Pokemon file detected - whitelisted';
-                } else if (/\.trade\s+\d{4,8}/i.test(content)) {
-                    reason = 'Pokemon trading code detected - whitelisted';
-                } else if (/\.me\s+\d{4,8}/i.test(content)) {
-                    reason = 'Pokemon .me command detected - whitelisted';
-                } else if (/\.mysteryegg\s+\d{4,8}/i.test(content)) {
-                    reason = 'Pokemon .mysteryegg command detected - whitelisted';
-                } else if (content.toLowerCase().includes('.bt ')) {
-                    reason = 'Pokemon battle team detected - whitelisted';
-                } else if (content.toLowerCase().includes('.pokepaste')) {
-                    reason = 'Pokemon paste link detected - whitelisted';
-                }
-                
-                analysis.processingTime = Date.now() - startTime;
-                analysis.reasoning.push(reason);
-                return analysis;
-            }
-
-            // Enhanced language detection
-            const detectedLang = this.synthiaTranslator.detectLanguage(content);
-            analysis.language.detected = detectedLang;
-            analysis.language.originalLanguage = this.synthiaTranslator.enhancedAPI.supportedLanguages.get(detectedLang) || 'Unknown';
-            
-            // Enhanced translation with multi-API support
-            if (detectedLang !== 'en') {
-                const translation = await this.synthiaTranslator.translateText(content, 'en', detectedLang);
-                analysis.language.translated = translation.translatedText;
-                analysis.language.confidence = translation.confidence;
-                analysis.language.provider = translation.provider;
-                analysis.language.processingTime = translation.processingTime;
-                analysis.multiApiUsed = true;
-                
-                if (!translation.error && translation.translatedText !== content) {
-                    console.log(`🌍 Analyzing translated text: "${translation.translatedText}"`);
+            // Try local model first
+            if (this.languageModel) {
+                const prediction = await this.predictLanguageLocal(content);
+                if (prediction.confidence > 0.8) {
+                    return prediction.language;
                 }
             }
 
-            // **NEW: Multi-API Decision Engine Analysis**
-            console.log(`🤖 Using Multi-API Decision Engine for enhanced analysis...`);
-            
-            try {
-                // Prepare context for decision engine
-                const decisionContext = {
-                    author: {
-                        id: author.id,
-                        tag: author.tag
-                    },
-                    channel: {
-                        id: channel.id,
-                        name: channel.name
-                    },
-                    guild: message.guild ? {
-                        id: message.guild.id,
-                        name: message.guild.name
-                    } : null,
-                    language: detectedLang,
-                    translatedText: analysis.language.translated
-                };
-
-                // Use decision engine for analysis
-                const decisionResult = await this.decisionEngine.analyzeWithMultiAPI(content, decisionContext);
-                
-                analysis.decisionEngineUsed = true;
-                analysis.apiResults = decisionResult.apiResults;
-                analysis.toxicityScore = decisionResult.toxicityScore;
-                analysis.threatLevel = decisionResult.toxicityScore;
-                analysis.confidence = decisionResult.confidence;
-                analysis.reasoning.push(...decisionResult.reasoning);
-                
-                console.log(`🧠 Multi-API Decision Result: ${decisionResult.toxicityScore}/10 (${decisionResult.confidence}% confidence)`);
-                console.log(`🔧 APIs used: ${Object.keys(decisionResult.individualScores || {}).join(', ')}`);
-                
-            } catch (decisionError) {
-                console.log(`⚠️ Decision engine failed, falling back to local analysis: ${decisionError.message}`);
-                
-                // Fallback to existing toxicity analysis
-                let toxicityAnalysis;
-                
-                if (detectedLang !== 'en' && analysis.language.translated) {
-                    toxicityAnalysis = await this.synthiaTranslator.analyzeToxicityInLanguage(content, detectedLang);
-                    
-                    if (toxicityAnalysis.toxicityLevel === 0) {
-                        const englishAnalysis = await this.synthiaTranslator.analyzeToxicityInLanguage(analysis.language.translated, 'en');
-                        if (englishAnalysis.toxicityLevel > toxicityAnalysis.toxicityLevel) {
-                            toxicityAnalysis = englishAnalysis;
-                        }
-                    }
-                } else {
-                    toxicityAnalysis = await this.synthiaTranslator.analyzeToxicityInLanguage(content, detectedLang);
-                }
-                
-                analysis.threatLevel = toxicityAnalysis.toxicityLevel;
-                analysis.toxicityScore = toxicityAnalysis.toxicityLevel;
-                analysis.reasoning.push(`Fallback analysis: Level ${toxicityAnalysis.toxicityLevel}/10`);
-            }
-            
-            // ENHANCED: Extract bypass detection information (still from local system)
-            const bypassAnalysis = await this.analyzeBypassAttempts(content);
-            analysis.elongatedWords = bypassAnalysis.elongatedWords || [];
-            analysis.bypassAttempts = bypassAnalysis.bypassAttempts || [];
-            analysis.bypassDetected = bypassAnalysis.bypassDetected || false;
-            analysis.normalizedText = bypassAnalysis.normalizedText || null;
-
-            // Get user profile for context
-            const profile = this.getBehavioralProfile(author.id);
-            profile.messageCount++;
-            
-            // ENHANCED: Decision logic with Multi-API results and bypass penalties
-            let baseThreatLevel = analysis.threatLevel;
-            let actualContentDetected = baseThreatLevel > 0;
-            
-            // Apply bypass penalties only when harmful content is detected
-            if (analysis.bypassDetected && analysis.bypassAttempts.length > 0) {
-                if (actualContentDetected) {
-                    const bypassPenalty = analysis.bypassAttempts.reduce((sum, attempt) => sum + (attempt.severity || 1), 0);
-                    analysis.threatLevel += bypassPenalty;
-                    analysis.reasoning.push(`Bypass penalty applied: +${bypassPenalty} (${analysis.bypassAttempts.length} techniques)`);
-                    
-                    console.log(`🚨 HARMFUL CONTENT + BYPASS DETECTED: ${baseThreatLevel} → ${analysis.threatLevel} (+${bypassPenalty})`);
-                } else {
-                    analysis.reasoning.push(`Bypass patterns detected but no harmful content - no penalty applied`);
-                    console.log(`✅ BYPASS PATTERNS IN NORMAL CONVERSATION: "${content}" - NO PENALTY APPLIED`);
-                }
-            }
-            
-            // Enhanced scam detection with Pokemon awareness
-            let isScam = false;
-            const scamResult = this.detectScamContent(content, analysis.normalizedText);
-            if (scamResult.isScam) {
-                analysis.threatLevel += scamResult.severity;
-                analysis.reasoning.push(...scamResult.reasons);
-                isScam = true;
-                actualContentDetected = true;
-            }
-            
-            // Decision logic based on final threat level
-            if (isScam && analysis.threatLevel >= 6) {
-                analysis.violationType = 'SCAM';
-                analysis.action = 'ban';
-            } else if (analysis.threatLevel >= config.moderationThresholds.ban && actualContentDetected) {
-                analysis.violationType = 'SEVERE_TOXICITY';
-                analysis.action = 'ban';
-            } else if (analysis.threatLevel >= config.moderationThresholds.mute && actualContentDetected) {
-                analysis.violationType = 'HARASSMENT';
-                analysis.action = 'mute';
-            } else if (analysis.threatLevel >= config.moderationThresholds.delete) {
-                analysis.violationType = 'TOXIC_BEHAVIOR';
-                analysis.action = 'delete';
-            } else if (analysis.threatLevel >= config.moderationThresholds.warn) {
-                analysis.violationType = 'DISRESPECTFUL';
-                analysis.action = 'warn';
-            }
-            
-            // Update profile when violations detected
-            if (analysis.violationType) {
-                this.updateProfileWithViolation(profile, analysis, content, detectedLang, isScam, actualContentDetected);
-                
-                // Enhanced logging for violations
-                console.log(`🚨 VIOLATION DETECTED - User: ${author.tag}`);
-                console.log(`   Content: "${content}"`);
-                console.log(`   Multi-API Decision Engine: ${analysis.decisionEngineUsed ? 'USED' : 'FALLBACK'}`);
-                console.log(`   APIs consulted: ${analysis.apiResults ? Object.keys(analysis.apiResults).join(', ') : 'Local only'}`);
-                console.log(`   Actual harmful content detected: ${actualContentDetected}`);
-                if (analysis.bypassDetected) {
-                    console.log(`   🔍 BYPASS DETECTED: Original normalized to "${analysis.normalizedText}"`);
-                    console.log(`   🔍 Bypass Methods: ${analysis.bypassAttempts.map(b => b.type).join(', ')}`);
-                    console.log(`   🔍 Bypass Penalty: +${analysis.threatLevel - baseThreatLevel}`);
-                }
-                console.log(`   Threat Level: ${analysis.threatLevel}/10 (base: ${baseThreatLevel})`);
-                console.log(`   Violation Type: ${analysis.violationType}`);
-                console.log(`   Action: ${analysis.action}`);
-                console.log(`   User Risk Score: ${profile.riskScore}/10`);
-                
-            } else if (analysis.threatLevel > 0) {
-                console.log(`⚪ Low threat detected but no action - User: ${author.tag}`);
-                console.log(`   Multi-API Analysis: ${analysis.decisionEngineUsed ? 'USED' : 'FALLBACK'}`);
-                console.log(`   Threat Level: ${analysis.threatLevel}/10 (below warn threshold ${config.moderationThresholds.warn})`);
-            }
-            
-            // Enhanced confidence calculation
-            const baseConfidence = analysis.decisionEngineUsed ? 
-                analysis.confidence : // Use decision engine confidence
-                (50 + (analysis.threatLevel * 5) + (analysis.reasoning.length * 10)); // Fallback calculation
-            
-            const bypassConfidenceBoost = (analysis.bypassDetected && actualContentDetected) ? 15 : 0;
-            analysis.confidence = Math.min(100, baseConfidence + bypassConfidenceBoost);
-            
-            analysis.processingTime = Date.now() - startTime;
-            
-            // Save data periodically
-            if (Math.random() < 0.1) {
-                await this.saveData();
-            }
-            
-            return analysis;
+            // Fallback to franc
+            const detected = franc(content, { minLength: 3 });
+            return detected === 'und' ? 'en' : detected;
 
         } catch (error) {
-            console.error('Enhanced Synthia analysis error:', error);
-            analysis.processingTime = Date.now() - startTime;
-            analysis.confidence = 0;
-            analysis.reasoning.push('Analysis error occurred');
-            return analysis;
+            logger.warn('Language detection failed:', error.message);
+            return 'en';
         }
     }
 
-    // NEW: Enhanced bypass detection method
-    async analyzeBypassAttempts(content) {
-        // Check if this is Pokemon content first
-        if (this.isPokemonRelatedContent(content)) {
-            return {
-                bypassDetected: false,
-                bypassAttempts: [],
-                elongatedWords: [],
-                normalizedText: content.toLowerCase()
+    async detectBypass(content) {
+        try {
+            const result = {
+                detected: false,
+                methods: [],
+                normalizedText: content.toLowerCase(),
+                confidence: 0
             };
-        }
 
-        // Use the translator's bypass detection
-        const normalizedText = this.synthiaTranslator.normalizeBypassAttempts(content);
-        const isNormalized = normalizedText !== content.toLowerCase();
-        
-        const result = {
-            bypassDetected: isNormalized,
-            bypassAttempts: [],
-            elongatedWords: [],
-            normalizedText: normalizedText
-        };
+            let normalized = content.toLowerCase();
+            const original = content;
 
-        if (isNormalized) {
-            // Detect specific bypass types
-            result.bypassAttempts = this.detectBypassTypes(content, normalizedText);
-            
-            // Find elongated words
-            result.elongatedWords = this.findElongatedWords(content);
-        }
-
-        return result;
-    }
-
-    // NEW: Detect specific bypass types
-    detectBypassTypes(originalText, normalizedText) {
-        const bypassAttempts = [];
-        
-        // Check for elongation
-        const elongationMatches = originalText.match(/(.)\1{2,}/gi);
-        if (elongationMatches) {
-            bypassAttempts.push({
-                type: 'elongation',
-                patterns: elongationMatches,
-                severity: 2
-            });
-        }
-        
-        // Check for character substitution
-        const substitutionPattern = /[*@$!#%&^+=~`|\\<>{}[\]"';:?]/g;
-        const substitutionCount = (originalText.match(substitutionPattern) || []).length;
-        if (substitutionCount > 2) {
-            bypassAttempts.push({
-                type: 'character_substitution',
-                count: substitutionCount,
-                severity: 3
-            });
-        }
-        
-        // Check for separator bypassing
-        const separatorMatches = originalText.match(/[a-zA-Z][.*_\-/\\|+~^]+[a-zA-Z]/gi);
-        if (separatorMatches && separatorMatches.length > 1) {
-            bypassAttempts.push({
-                type: 'separator_bypassing',
-                patterns: separatorMatches,
-                severity: 3
-            });
-        }
-        
-        // Check for excessive spacing
-        const spacingMatches = originalText.match(/\b[a-zA-Z]\s+[a-zA-Z]\s+[a-zA-Z]/gi);
-        if (spacingMatches) {
-            bypassAttempts.push({
-                type: 'spacing_bypassing',
-                patterns: spacingMatches,
-                severity: 2
-            });
-        }
-        
-        // Check for leetspeak (excluding Pokemon codes)
-        const leetMatches = originalText.match(/[a-zA-Z]*[0-9]+[a-zA-Z]*/gi);
-        if (leetMatches && leetMatches.length > 0) {
-            const nonPokemonLeetMatches = leetMatches.filter(match => {
-                return !(/\.trade\s+\d{4,8}/i.test(originalText) && /^\d{4,8}$/.test(match)) &&
-                       !(/\.me\s+\d{4,8}/i.test(originalText) && /^\d{4,8}$/.test(match)) &&
-                       !(/\.mysteryegg\s+\d{4,8}/i.test(originalText) && /^\d{4,8}$/.test(match));
-            });
-            
-            if (nonPokemonLeetMatches.length > 0) {
-                bypassAttempts.push({
-                    type: 'leetspeak',
-                    patterns: nonPokemonLeetMatches,
-                    severity: 2
-                });
+            // Character elongation detection
+            if (this.bypassPatterns.elongationPattern.test(content)) {
+                result.methods.push('elongation');
+                normalized = normalized.replace(this.bypassPatterns.elongationPattern, '$1');
             }
-        }
-        
-        return bypassAttempts;
-    }
 
-    // NEW: Find elongated words
-    findElongatedWords(text) {
-        const elongatedWords = [];
-        const words = text.split(/\s+/);
-        
-        for (const word of words) {
-            const elongationMatch = word.match(/(.)\1{2,}/gi);
-            if (elongationMatch) {
-                const normalized = word.replace(/(.)\1{2,}/gi, '$1');
-                elongatedWords.push({
-                    original: word,
-                    normalized: normalized,
-                    isElongated: true
-                });
-            }
-        }
-        
-        return elongatedWords;
-    }
-
-    // NEW: Enhanced scam detection with Pokemon awareness
-    detectScamContent(originalText, normalizedText) {
-        const lowerText = originalText.toLowerCase();
-        const normalizedLowerText = normalizedText ? normalizedText.toLowerCase() : lowerText;
-        
-        let scamScore = 0;
-        const reasons = [];
-        
-        const scamPatterns = [
-            'free nitro', 'discord gift', 'free robux', 'click here free',
-            'dm me for', 'guaranteed money', 'crypto scam', 'easy money'
-        ];
-        
-        for (const pattern of scamPatterns) {
-            if (lowerText.includes(pattern) || normalizedLowerText.includes(pattern)) {
-                scamScore += 4;
-                reasons.push(`Scam indicator: ${pattern}`);
-                
-                if (normalizedLowerText.includes(pattern) && !lowerText.includes(pattern)) {
-                    scamScore += 2;
-                    reasons.push(`Scam detected after bypass normalization`);
+            // Character substitution detection
+            let substitutions = 0;
+            for (const [substitute, original] of this.bypassPatterns.characterSubstitution) {
+                if (content.includes(substitute)) {
+                    substitutions++;
+                    normalized = normalized.replace(new RegExp(this.escapeRegex(substitute), 'g'), original);
                 }
             }
-        }
-        
-        // Enhanced .trade/.me/.mysteryegg scam detection with Pokemon protection
-        if (lowerText.includes('.trade') || lowerText.includes('.me') || lowerText.includes('.mysteryegg') || 
-            (normalizedLowerText && (normalizedLowerText.includes('.trade') || 
-            normalizedLowerText.includes('.me') || normalizedLowerText.includes('.mysteryegg')))) {
             
-            const suspiciousContext = ['free', 'click', 'guaranteed', 'nitro', 'gift', 'scam', 'money'];
-            const hasSuspiciousContext = suspiciousContext.some(word => 
-                lowerText.includes(word) || 
-                (normalizedLowerText && normalizedLowerText.includes(word))
-            );
-            
-            const isPokemonTrading = this.isPokemonRelatedContent(originalText);
-            
-            if (hasSuspiciousContext && !isPokemonTrading) {
-                scamScore += 5;
-                const commandType = lowerText.includes('.trade') ? '.trade' : 
-                                   lowerText.includes('.me') ? '.me' : '.mysteryegg';
-                reasons.push(`Suspicious ${commandType} context detected`);
+            if (substitutions > 0) {
+                result.methods.push('character_substitution');
             }
-        }
-        
-        return {
-            isScam: scamScore >= 4,
-            severity: scamScore,
-            reasons: reasons
-        };
-    }
 
-    // NEW: Update profile with violation information
-    updateProfileWithViolation(profile, analysis, content, detectedLang, isScam, actualContentDetected) {
-        if (!profile.violations) profile.violations = [];
-        
-        profile.violations.push({
-            timestamp: Date.now(),
-            threatLevel: analysis.threatLevel,
-            baseThreatLevel: analysis.threatLevel - (analysis.bypassAttempts?.reduce((sum, b) => sum + (b.severity || 1), 0) || 0),
-            violationType: analysis.violationType,
-            language: detectedLang,
-            elongated: analysis.elongatedWords.length > 0,
-            bypassDetected: analysis.bypassDetected,
-            bypassAttempts: analysis.bypassAttempts,
-            bypassMethods: analysis.bypassAttempts.map(b => b.type),
-            normalizedContent: analysis.normalizedText,
-            content: content.slice(0, 100),
-            action: analysis.action,
-            multiApiUsed: analysis.multiApiUsed,
-            decisionEngineUsed: analysis.decisionEngineUsed,
-            provider: analysis.language.provider,
-            isScam: isScam,
-            actualContentDetected: actualContentDetected,
-            apiResults: analysis.apiResults ? Object.keys(analysis.apiResults) : []
-        });
-        
-        // Update risk score
-        const baseRiskIncrease = Math.ceil(analysis.threatLevel / 3);
-        const bypassMultiplier = (analysis.bypassDetected && actualContentDetected) ? 1.5 : 1;
-        const riskIncrease = Math.ceil(baseRiskIncrease * bypassMultiplier);
-        
-        profile.riskScore = Math.min(10, (profile.riskScore || 0) + riskIncrease);
-        
-        // Update language history
-        if (!profile.languageHistory) profile.languageHistory = [];
-        profile.languageHistory.push({
-            language: detectedLang,
-            timestamp: Date.now(),
-            threatLevel: analysis.threatLevel,
-            bypassDetected: analysis.bypassDetected,
-            decisionEngineUsed: analysis.decisionEngineUsed
-        });
-        
-        if (analysis.multiApiUsed) {
-            profile.multiApiTranslations = (profile.multiApiTranslations || 0) + 1;
-        }
+            // Separator bypassing detection
+            const separatorMatches = content.match(this.bypassPatterns.separatorPattern);
+            if (separatorMatches && separatorMatches.length > 2) {
+                result.methods.push('separator_bypassing');
+                normalized = normalized.replace(this.bypassPatterns.separatorPattern, '$1$3');
+            }
 
-        // Track bypass attempts
-        if (analysis.bypassDetected && actualContentDetected) {
-            if (!profile.bypassHistory) profile.bypassHistory = [];
-            profile.bypassHistory.push({
-                timestamp: Date.now(),
-                methods: analysis.bypassAttempts.map(b => b.type),
-                originalText: content.slice(0, 50),
-                normalizedText: analysis.normalizedText?.slice(0, 50),
-                penaltyApplied: analysis.threatLevel - (analysis.threatLevel - (analysis.bypassAttempts?.reduce((sum, b) => sum + (b.severity || 1), 0) || 0)),
-                hadHarmfulContent: actualContentDetected
-            });
-            
-            profile.totalBypassAttempts = (profile.totalBypassAttempts || 0) + 1;
-        }
-    }
+            // Spacing detection
+            if (this.bypassPatterns.spacingPattern.test(content)) {
+                result.methods.push('spacing_manipulation');
+                normalized = normalized.replace(this.bypassPatterns.spacingPattern, '$1');
+            }
 
-    getBehavioralProfile(userId) {
-        if (!this.profiles.has(userId)) {
-            this.profiles.set(userId, {
-                userId: userId,
-                messageCount: 0,
-                violations: [],
-                riskScore: 0,
-                languageHistory: [],
-                multiApiTranslations: 0,
-                bypassHistory: [],
-                totalBypassAttempts: 0,
-                createdAt: Date.now(),
-                lastAnalysis: Date.now()
-            });
-        }
-        const profile = this.profiles.get(userId);
-        profile.lastAnalysis = Date.now();
-        return profile;
-    }
+            // Unicode lookalike detection
+            if (this.bypassPatterns.unicodePattern.test(content)) {
+                result.methods.push('unicode_substitution');
+            }
 
-    getProfile(userId) {
-        return this.profiles.get(userId) || null;
-    }
+            // Machine learning bypass detection
+            if (this.bypassDetectionModel) {
+                const mlResult = await this.predictBypassML(content, normalized);
+                if (mlResult.confidence > 0.7) {
+                    result.methods.push('ml_detected');
+                    result.confidence = mlResult.confidence;
+                }
+            }
 
-    // Get bypass statistics for a user
-    getBypassStatistics(userId) {
-        const profile = this.getProfile(userId);
-        if (!profile || !profile.bypassHistory) {
+            result.detected = result.methods.length > 0;
+            result.normalizedText = normalized.trim();
+
+            if (result.detected) {
+                this.stats.bypassDetected++;
+                logger.debug(`Bypass detected: ${content} → ${normalized} (methods: ${result.methods.join(', ')})`);
+            }
+
+            return result;
+
+        } catch (error) {
+            logger.error('Bypass detection failed:', error);
             return {
-                totalAttempts: 0,
-                recentAttempts: 0,
-                commonMethods: [],
-                latestAttempt: null
+                detected: false,
+                methods: [],
+                normalizedText: content.toLowerCase(),
+                confidence: 0
             };
         }
+    }
 
-        const now = Date.now();
-        const recentAttempts = profile.bypassHistory.filter(
-            attempt => (now - attempt.timestamp) < (24 * 60 * 60 * 1000)
-        ).length;
-
-        const methodCounts = {};
-        profile.bypassHistory.forEach(attempt => {
-            attempt.methods.forEach(method => {
-                methodCounts[method] = (methodCounts[method] || 0) + 1;
-            });
-        });
-
-        const commonMethods = Object.entries(methodCounts)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 3)
-            .map(([method, count]) => ({ method, count }));
-
-        return {
-            totalAttempts: profile.totalBypassAttempts || 0,
-            recentAttempts: recentAttempts,
-            commonMethods: commonMethods,
-            latestAttempt: profile.bypassHistory[profile.bypassHistory.length - 1] || null
+    async analyzeContentWithProviders(content, language) {
+        const results = {
+            toxicityScore: 0,
+            sentimentScore: 0,
+            threatLevel: 0,
+            confidence: 0,
+            categories: [],
+            entities: [],
+            keywords: [],
+            modelsUsed: [],
+            apiResponses: {}
         };
-    }
 
-    // Get Multi-API Decision Engine status
-    getDecisionEngineStatus() {
-        return this.decisionEngine.getSystemStatus();
-    }
+        const promises = [];
 
-    // Clear bypass history for a user
-    clearBypassHistory(userId) {
-        const profile = this.getProfile(userId);
-        if (profile) {
-            profile.bypassHistory = [];
-            profile.totalBypassAttempts = 0;
-            return true;
+        // OpenAI Analysis
+        if (this.openai) {
+            promises.push(this.analyzeWithOpenAI(content, language));
         }
-        return false;
-    }
 
-    // Get server-wide bypass statistics
-    getServerBypassStatistics() {
-        let totalAttempts = 0;
-        let totalUsers = 0;
-        const methodCounts = {};
-        const recentAttempts = [];
-        const now = Date.now();
+        // Hugging Face Analysis
+        if (this.huggingface) {
+            promises.push(this.analyzeWithHuggingFace(content));
+        }
 
-        for (const [userId, profile] of this.profiles) {
-            if (profile.bypassHistory && profile.bypassHistory.length > 0) {
-                totalUsers++;
-                totalAttempts += profile.totalBypassAttempts || 0;
+        // Azure Analysis
+        if (this.azure) {
+            promises.push(this.analyzeWithAzure(content, language));
+        }
 
-                profile.bypassHistory.forEach(attempt => {
-                    attempt.methods.forEach(method => {
-                        methodCounts[method] = (methodCounts[method] || 0) + 1;
-                    });
+        // Google Cloud Analysis
+        if (this.googleCloud) {
+            promises.push(this.analyzeWithGoogleCloud(content));
+        }
 
-                    if ((now - attempt.timestamp) < (24 * 60 * 60 * 1000)) {
-                        recentAttempts.push({
-                            userId: userId,
-                            timestamp: attempt.timestamp,
-                            methods: attempt.methods
-                        });
-                    }
-                });
+        // Local Model Analysis
+        if (this.toxicityModel) {
+            promises.push(this.analyzeWithLocalModel(content));
+        }
+
+        // Natural Language Processing
+        promises.push(this.analyzeWithNLP(content, language));
+
+        try {
+            const responses = await Promise.allSettled(promises);
+            
+            const validResponses = responses
+                .filter(response => response.status === 'fulfilled')
+                .map(response => response.value);
+
+            if (validResponses.length === 0) {
+                throw new Error('All AI providers failed');
             }
+
+            // Aggregate results using weighted average
+            const weights = this.calculateProviderWeights(validResponses);
+            
+            for (let i = 0; i < validResponses.length; i++) {
+                const response = validResponses[i];
+                const weight = weights[i];
+
+                results.toxicityScore += response.toxicity * weight;
+                results.sentimentScore += response.sentiment * weight;
+                results.confidence += response.confidence * weight;
+                
+                results.categories.push(...response.categories || []);
+                results.entities.push(...response.entities || []);
+                results.keywords.push(...response.keywords || []);
+                results.modelsUsed.push(response.provider);
+                results.apiResponses[response.provider] = response;
+            }
+
+            // Normalize scores
+            results.toxicityScore = Math.min(10, Math.max(0, results.toxicityScore));
+            results.sentimentScore = Math.max(-1, Math.min(1, results.sentimentScore));
+            results.confidence = Math.min(100, Math.max(0, results.confidence));
+            results.threatLevel = Math.ceil(results.toxicityScore);
+
+            // Remove duplicates
+            results.categories = [...new Set(results.categories)];
+            results.entities = [...new Set(results.entities)];
+            results.keywords = [...new Set(results.keywords)];
+
+            return results;
+
+        } catch (error) {
+            logger.error('Content analysis with providers failed:', error);
+            
+            // Fallback to basic analysis
+            return this.analyzeWithNLP(content, language);
+        }
+    }
+
+    async analyzeWithOpenAI(content, language) {
+        try {
+            const response = await this.openai.chat.completions.create({
+                model: this.aiProviders.openai.model,
+                messages: [
+                    {
+                        role: 'system',
+                        content: `You are an advanced content moderation AI. Analyze the following text and return a JSON response with:
+                        - toxicity: number 0-10 (toxicity level)
+                        - sentiment: number -1 to 1 (negative to positive)
+                        - confidence: number 0-100 (confidence in analysis)
+                        - categories: array of detected violation types
+                        - entities: array of detected entities
+                        - reasoning: brief explanation
+                        
+                        Be very accurate and consider context, sarcasm, and cultural nuances.`
+                    },
+                    {
+                        role: 'user',
+                        content: `Analyze this ${language} text: "${content}"`
+                    }
+                ],
+                temperature: this.aiProviders.openai.temperature,
+                max_tokens: 500
+            });
+
+            const result = JSON.parse(response.choices[0].message.content);
+            
+            return {
+                provider: 'OpenAI',
+                toxicity: result.toxicity || 0,
+                sentiment: result.sentiment || 0,
+                confidence: result.confidence || 0,
+                categories: result.categories || [],
+                entities: result.entities || [],
+                reasoning: result.reasoning || '',
+                raw: response
+            };
+
+        } catch (error) {
+            logger.warn('OpenAI analysis failed:', error.message);
+            throw error;
+        }
+    }
+
+    async analyzeWithHuggingFace(content) {
+        try {
+            const [toxicityResult, sentimentResult] = await Promise.all([
+                this.huggingface.textClassification({
+                    model: 'unitary/toxic-bert',
+                    inputs: content
+                }),
+                this.huggingface.textClassification({
+                    model: 'cardiffnlp/twitter-roberta-base-sentiment-latest',
+                    inputs: content
+                })
+            ]);
+
+            const toxicity = toxicityResult.find(r => r.label === 'TOXIC')?.score || 0;
+            const sentiment = sentimentResult.find(r => r.label === 'LABEL_2')?.score || 0.5;
+
+            return {
+                provider: 'HuggingFace',
+                toxicity: toxicity * 10,
+                sentiment: (sentiment - 0.5) * 2,
+                confidence: Math.max(toxicity, Math.abs(sentiment - 0.5)) * 100,
+                categories: toxicity > 0.5 ? ['toxic'] : [],
+                entities: [],
+                raw: { toxicityResult, sentimentResult }
+            };
+
+        } catch (error) {
+            logger.warn('Hugging Face analysis failed:', error.message);
+            throw error;
+        }
+    }
+
+    async analyzeWithAzure(content, language) {
+        try {
+            const [sentimentResult, entityResult] = await Promise.all([
+                this.azure.analyzeSentiment([{ id: '1', text: content, language }]),
+                this.azure.recognizeEntities([{ id: '1', text: content, language }])
+            ]);
+
+            const sentiment = sentimentResult[0];
+            const entities = entityResult[0].entities;
+
+            let toxicity = 0;
+            if (sentiment.sentiment === 'negative' && sentiment.confidenceScores.negative > 0.8) {
+                toxicity = sentiment.confidenceScores.negative * 5; // Scale to 0-5
+            }
+
+            return {
+                provider: 'Azure',
+                toxicity: toxicity,
+                sentiment: sentiment.confidenceScores.positive - sentiment.confidenceScores.negative,
+                confidence: Math.max(...Object.values(sentiment.confidenceScores)) * 100,
+                categories: sentiment.sentiment === 'negative' ? ['negative'] : [],
+                entities: entities.map(e => e.text),
+                raw: { sentimentResult, entityResult }
+            };
+
+        } catch (error) {
+            logger.warn('Azure analysis failed:', error.message);
+            throw error;
+        }
+    }
+
+    async analyzeWithGoogleCloud(content) {
+        try {
+            const document = {
+                content: content,
+                type: 'PLAIN_TEXT'
+            };
+
+            const [sentimentResult, entityResult] = await Promise.all([
+                this.googleCloud.analyzeSentiment({ document }),
+                this.googleCloud.analyzeEntities({ document })
+            ]);
+
+            const sentiment = sentimentResult[0].documentSentiment;
+            const entities = entityResult[0].entities;
+
+            let toxicity = 0;
+            if (sentiment.score < -0.5 && sentiment.magnitude > 0.5) {
+                toxicity = Math.abs(sentiment.score) * sentiment.magnitude * 5;
+            }
+
+            return {
+                provider: 'GoogleCloud',
+                toxicity: toxicity,
+                sentiment: sentiment.score,
+                confidence: sentiment.magnitude * 100,
+                categories: sentiment.score < -0.5 ? ['negative'] : [],
+                entities: entities.map(e => e.name),
+                raw: { sentimentResult, entityResult }
+            };
+
+        } catch (error) {
+            logger.warn('Google Cloud analysis failed:', error.message);
+            throw error;
+        }
+    }
+
+    async analyzeWithLocalModel(content) {
+        try {
+            // Tokenize and preprocess
+            const tokens = this.tokenizer.tokenize(content.toLowerCase());
+            const features = await this.extractFeatures(content);
+            
+            // Predict with local model
+            const prediction = this.toxicityModel.predict(tf.tensor2d([features]));
+            const toxicityScore = await prediction.data();
+            
+            // Sentiment analysis
+            const sentimentAnalysis = sentiment(content);
+            
+            prediction.dispose();
+
+            return {
+                provider: 'LocalModel',
+                toxicity: toxicityScore[0] * 10,
+                sentiment: sentimentAnalysis.comparative,
+                confidence: Math.abs(toxicityScore[0]) * 100,
+                categories: toxicityScore[0] > 0.5 ? ['toxic'] : [],
+                entities: [],
+                raw: { toxicityScore, sentimentAnalysis }
+            };
+
+        } catch (error) {
+            logger.warn('Local model analysis failed:', error.message);
+            throw error;
+        }
+    }
+
+    async analyzeWithNLP(content, language) {
+        try {
+            // Tokenization
+            const tokens = this.tokenizer.tokenize(content.toLowerCase());
+            
+            // Remove stopwords
+            const stopwords = this.stopwords[language] || this.stopwords.en;
+            const filteredTokens = tokens.filter(token => !stopwords.includes(token));
+            
+            // Sentiment analysis
+            const sentimentAnalysis = sentiment(content);
+            
+            // Extract entities using compromise
+            const doc = compromise(content);
+            const people = doc.people().out('array');
+            const places = doc.places().out('array');
+            const organizations = doc.organizations().out('array');
+            
+            // Keyword extraction
+            const keywordExtractor = require('keyword-extractor');
+            const keywords = keywordExtractor.extract(content, {
+                language: language === 'en' ? 'english' : 'english', // Limited language support
+                remove_digits: true,
+                return_changed_case: true,
+                remove_duplicates: true
+            });
+
+            // Basic toxicity detection using word lists
+            const toxicWords = this.getToxicWords(language);
+            const toxicCount = filteredTokens.filter(token => toxicWords.includes(token)).length;
+            const toxicity = Math.min(10, (toxicCount / filteredTokens.length) * 20);
+
+            return {
+                provider: 'NLP',
+                toxicity: toxicity,
+                sentiment: sentimentAnalysis.comparative,
+                confidence: 70,
+                categories: toxicity > 2 ? ['potentially_toxic'] : [],
+                entities: [...people, ...places, ...organizations],
+                keywords: keywords.slice(0, 10),
+                raw: { tokens, sentimentAnalysis, toxicCount }
+            };
+
+        } catch (error) {
+            logger.warn('NLP analysis failed:', error.message);
+            return {
+                provider: 'NLP_Fallback',
+                toxicity: 0,
+                sentiment: 0,
+                confidence: 0,
+                categories: [],
+                entities: [],
+                keywords: []
+            };
+        }
+    }
+
+    calculateProviderWeights(responses) {
+        // Assign weights based on provider reliability and confidence
+        const weights = responses.map(response => {
+            let weight = 0.1; // Base weight
+            
+            switch (response.provider) {
+                case 'OpenAI':
+                    weight = 0.3;
+                    break;
+                case 'HuggingFace':
+                    weight = 0.25;
+                    break;
+                case 'Azure':
+                    weight = 0.2;
+                    break;
+                case 'GoogleCloud':
+                    weight = 0.2;
+                    break;
+                case 'LocalModel':
+                    weight = 0.15;
+                    break;
+                case 'NLP':
+                    weight = 0.1;
+                    break;
+            }
+            
+            // Adjust weight based on confidence
+            weight *= (response.confidence / 100);
+            
+            return weight;
+        });
+        
+        // Normalize weights to sum to 1
+        const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+        return weights.map(weight => weight / totalWeight);
+    }
+
+    determineModerationAction(analysis) {
+        const thresholds = config.get('moderation.thresholds');
+        
+        if (analysis.threatLevel >= thresholds.ban) {
+            return {
+                required: true,
+                action: 'ban',
+                reason: `Severe violation detected (threat level: ${analysis.threatLevel}/10)`
+            };
+        } else if (analysis.threatLevel >= thresholds.mute) {
+            return {
+                required: true,
+                action: 'mute',
+                reason: `Serious violation detected (threat level: ${analysis.threatLevel}/10)`
+            };
+        } else if (analysis.threatLevel >= thresholds.delete) {
+            return {
+                required: true,
+                action: 'delete',
+                reason: `Inappropriate content detected (threat level: ${analysis.threatLevel}/10)`
+            };
+        } else if (analysis.threatLevel >= thresholds.warn) {
+            return {
+                required: true,
+                action: 'warn',
+                reason: `Minor violation detected (threat level: ${analysis.threatLevel}/10)`
+            };
+        } else {
+            return {
+                required: false,
+                action: 'none',
+                reason: 'Content appears safe'
+            };
+        }
+    }
+
+    async extractInsights(analysis, message) {
+        try {
+            // Extract user behavior patterns
+            const userHistory = await this.getUserHistory(message.author.id);
+            analysis.userInsights = {
+                riskScore: userHistory.riskScore || 0,
+                previousViolations: userHistory.violations || 0,
+                messagingPattern: userHistory.pattern || 'normal'
+            };
+
+            // Extract channel context
+            analysis.contextInsights = {
+                channelType: message.channel.type,
+                channelName: message.channel.name,
+                isNsfw: message.channel.nsfw || false,
+                memberCount: message.guild?.memberCount || 0
+            };
+
+            // Extract temporal patterns
+            const hour = new Date().getHours();
+            analysis.temporalInsights = {
+                hour: hour,
+                isNightTime: hour < 6 || hour > 22,
+                dayOfWeek: new Date().getDay()
+            };
+
+        } catch (error) {
+            logger.warn('Failed to extract insights:', error.message);
+        }
+    }
+
+    async saveAnalysis(analysis, message) {
+        try {
+            await this.database.models.Analysis.create({
+                message_id: analysis.messageId,
+                language: analysis.language,
+                sentiment: analysis.sentimentScore,
+                toxicity_score: analysis.toxicityScore,
+                threat_level: analysis.threatLevel,
+                confidence: analysis.confidence,
+                categories: analysis.categories,
+                entities: analysis.entities,
+                bypass_detected: analysis.bypassDetected,
+                bypass_methods: analysis.bypassMethods,
+                ai_models_used: analysis.aiModelsUsed,
+                processing_time: analysis.processingTime,
+                action_taken: analysis.recommendedAction,
+                metadata: {
+                    keywords: analysis.keywords,
+                    apiResponses: analysis.apiResponses,
+                    insights: {
+                        user: analysis.userInsights,
+                        context: analysis.contextInsights,
+                        temporal: analysis.temporalInsights
+                    }
+                }
+            });
+        } catch (error) {
+            logger.warn('Failed to save analysis:', error.message);
+        }
+    }
+
+    updateStatistics(analysis) {
+        if (analysis.toxicityScore > 0) {
+            this.stats.toxicDetected++;
+        }
+        
+        if (analysis.requiresModeration) {
+            this.stats.moderationActions++;
         }
 
-        const topMethods = Object.entries(methodCounts)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 5)
-            .map(([method, count]) => ({ method, count }));
+        // Update performance metrics
+        this.performanceMetrics.processingTimes.push(analysis.processingTime);
+        this.performanceMetrics.confidenceScores.push(analysis.confidence);
+        
+        // Keep only recent metrics
+        if (this.performanceMetrics.processingTimes.length > 1000) {
+            this.performanceMetrics.processingTimes = this.performanceMetrics.processingTimes.slice(-500);
+        }
+        
+        // Calculate rolling averages
+        const recentTimes = this.performanceMetrics.processingTimes.slice(-100);
+        this.stats.averageProcessingTime = recentTimes.reduce((a, b) => a + b, 0) / recentTimes.length;
+    }
 
+    optimizePerformance() {
+        try {
+            const now = Date.now();
+            const timeSinceLastOptimization = now - this.performanceMetrics.lastOptimization;
+            
+            if (timeSinceLastOptimization < 300000) return; // Only optimize every 5 minutes
+
+            // Analyze performance metrics
+            const avgProcessingTime = this.stats.averageProcessingTime;
+            
+            // If processing time is too high, adjust AI provider weights
+            if (avgProcessingTime > 5000) { // 5 seconds
+                logger.info('🔧 Performance optimization: Reducing AI provider usage');
+                // Implementation would adjust provider selection logic
+            }
+            
+            // Clean up TensorFlow memory
+            if (tf.memory().numTensors > 100) {
+                tf.disposeVariables();
+                logger.debug('🧹 Cleaned up TensorFlow memory');
+            }
+            
+            this.performanceMetrics.lastOptimization = now;
+            
+        } catch (error) {
+            logger.warn('Performance optimization failed:', error.message);
+        }
+    }
+
+    // Utility methods
+    hashContent(content) {
+        return require('crypto')
+            .createHash('sha256')
+            .update(content)
+            .digest('hex')
+            .substring(0, 16);
+    }
+
+    escapeRegex(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    async extractFeatures(text) {
+        // Extract numerical features for ML models
+        const tokens = this.tokenizer.tokenize(text.toLowerCase());
+        
+        const features = [
+            tokens.length, // Text length
+            (text.match(/[A-Z]/g) || []).length, // Uppercase count
+            (text.match(/[!?]/g) || []).length, // Punctuation count
+            (text.match(/\d/g) || []).length, // Number count
+            (text.match(/[^\w\s]/g) || []).length, // Special chars
+            text.split(' ').length, // Word count
+            text.length / Math.max(1, text.split(' ').length), // Avg word length
+        ];
+        
+        // Pad or truncate to fixed size
+        while (features.length < 100) {
+            features.push(0);
+        }
+        
+        return features.slice(0, 100);
+    }
+
+    getToxicWords(language) {
+        // Return language-specific toxic word list
+        const toxicWords = {
+            en: ['fuck', 'shit', 'damn', 'hate', 'kill', 'die', 'stupid', 'idiot'],
+            es: ['mierda', 'puta', 'joder', 'cabron', 'idiota'],
+            fr: ['merde', 'putain', 'con', 'salope'],
+            de: ['scheiße', 'fick', 'arsch', 'idiot'],
+            // Add more languages as needed
+        };
+        
+        return toxicWords[language] || toxicWords.en;
+    }
+
+    async getUserHistory(userId) {
+        try {
+            const user = await this.database.models.User.findByPk(userId);
+            return user || {};
+        } catch (error) {
+            return {};
+        }
+    }
+
+    async predictLanguageLocal(content) {
+        // Placeholder for local language detection model
+        return { language: 'en', confidence: 0.5 };
+    }
+
+    async predictBypassML(original, normalized) {
+        // Placeholder for ML bypass detection
+        return { confidence: 0.5 };
+    }
+
+    updatePerformanceMetrics(result) {
+        // Update accuracy metrics, false positive/negative rates, etc.
+        this.performanceMetrics.accuracyScores.push(result.confidence / 100);
+    }
+
+    // Public API methods
+    getStatistics() {
+        return { ...this.stats };
+    }
+
+    getPerformanceMetrics() {
+        return { ...this.performanceMetrics };
+    }
+
+    async healthCheck() {
+        const providers = [];
+        
+        if (this.openai) providers.push({ name: 'OpenAI', status: 'available' });
+        if (this.huggingface) providers.push({ name: 'HuggingFace', status: 'available' });
+        if (this.azure) providers.push({ name: 'Azure', status: 'available' });
+        if (this.googleCloud) providers.push({ name: 'GoogleCloud', status: 'available' });
+        
         return {
-            totalAttempts: totalAttempts,
-            affectedUsers: totalUsers,
-            recentAttempts: recentAttempts.length,
-            topBypassMethods: topMethods,
-            detectionRate: totalAttempts > 0 ? 100 : 0,
-            decisionEngineHealth: this.decisionEngine.getSystemStatus().systemHealth
+            status: 'healthy',
+            providers: providers,
+            stats: this.stats,
+            modelsLoaded: {
+                toxicity: !!this.toxicityModel,
+                sentiment: !!this.sentimentModel,
+                language: !!this.languageModel,
+                bypass: !!this.bypassDetectionModel
+            }
         };
     }
 }
