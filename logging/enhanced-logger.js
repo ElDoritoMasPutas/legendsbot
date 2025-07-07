@@ -1,141 +1,428 @@
-// Enhanced Discord Logger v9.0
-const { EmbedBuilder } = require('discord.js');
-const config = require('../config/config.js');
+const winston = require('winston');
+const fs = require('fs-extra');
+const path = require('path');
+const config = require('../config/enhanced-config.js');
 
-class EnhancedDiscordLogger {
-    constructor(serverManager) {
-        this.serverManager = serverManager;
-        this.logCounts = {
-            info: 0,
-            warning: 0,
-            error: 0,
-            success: 0,
-            moderation: 0,
-            translation: 0,
-            multi_language: 0,
-            hourly_report: 0,
-            synthia_intelligence: 0,
-            elongated_detection: 0,
-            multiapi: 0,
-            performance: 0
-        };
-        this.hourlyStats = new Map();
+class Logger {
+    constructor(component = 'System') {
+        this.component = component;
+        this.winston = this.createWinstonLogger();
+        this.setupLogDirectory();
     }
 
-    async sendLog(guild, type, title, description, fields = [], color = null) {
-        if (!guild) return;
-
-        let logChannels = this.serverManager.getLogChannels(guild.id);
-        
-        // Auto-setup if no log channels configured
-        if (logChannels.length === 0) {
-            console.log(`🔄 No log channels for ${guild.name}, attempting auto-setup...`);
-            const autoChannel = await this.serverManager.autoSetupLogChannel(guild);
-            if (autoChannel) {
-                logChannels = [autoChannel.id];
-            } else {
-                console.log(`⚠️ No log channels configured for ${guild.name}. Use !synthia loghere to set up logging.`);
-                return;
-            }
+    setupLogDirectory() {
+        if (config.logging.file.enabled) {
+            fs.ensureDirSync(config.logging.file.path);
         }
+    }
 
-        this.logCounts[type] = (this.logCounts[type] || 0) + 1;
+    createWinstonLogger() {
+        const transports = [];
 
-        const embed = new EmbedBuilder()
-            .setColor(color || config.colors[type] || config.colors.primary)
-            .setTitle(title)
-            .setDescription(description)
-            .setFooter({ 
-                text: `Synthia v${config.aiVersion} Multi-API System • ${type.toUpperCase()} #${this.logCounts[type]}`,
-                iconURL: guild.client.user?.displayAvatarURL() 
-            })
-            .setTimestamp();
-
-        if (fields.length > 0) {
-            const safeFields = fields.map(field => ({
-                name: String(field.name || 'Unknown'),
-                value: String(field.value || 'N/A').slice(0, 1024),
-                inline: Boolean(field.inline)
+        // Console transport
+        if (config.logging.console.enabled) {
+            transports.push(new winston.transports.Console({
+                level: config.logging.level,
+                format: winston.format.combine(
+                    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+                    winston.format.errors({ stack: true }),
+                    winston.format.printf(({ timestamp, level, message, stack, ...meta }) => {
+                        const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : '';
+                        const stackStr = stack ? `\n${stack}` : '';
+                        return `[${timestamp}] ${level.toUpperCase()} [${this.component}]: ${message}${metaStr}${stackStr}`;
+                    }),
+                    config.logging.console.colorize ? winston.format.colorize() : winston.format.uncolorize()
+                )
             }));
-            embed.addFields(safeFields.slice(0, 25));
         }
 
-        embed.setAuthor({
-            name: 'Synthia AI v9.0 - Enhanced Multi-API Intelligence',
-            iconURL: guild.client.user?.displayAvatarURL()
-        });
+        // File transport
+        if (config.logging.file.enabled) {
+            // General log file
+            transports.push(new winston.transports.File({
+                filename: path.join(config.logging.file.path, 'synthia.log'),
+                level: config.logging.level,
+                maxsize: config.logging.file.maxSize,
+                maxFiles: config.logging.file.maxFiles,
+                format: winston.format.combine(
+                    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+                    winston.format.errors({ stack: true }),
+                    winston.format.json()
+                )
+            }));
 
-        for (const channelId of logChannels) {
-            try {
-                const channel = guild.channels.cache.get(channelId);
-                if (channel && channel.isTextBased()) {
-                    await channel.send({ embeds: [embed] });
-                } else {
-                    this.serverManager.removeLogChannel(guild.id, channelId);
-                    console.log(`🗑️ Removed invalid log channel ${channelId} from ${guild.name}`);
-                }
-            } catch (error) {
-                console.error(`❌ Failed to send log to channel ${channelId}:`, error);
-                if (error.code === 50013 || error.code === 10003) {
-                    await this.serverManager.autoSetupLogChannel(guild);
-                }
+            // Error log file
+            transports.push(new winston.transports.File({
+                filename: path.join(config.logging.file.path, 'error.log'),
+                level: 'error',
+                maxsize: config.logging.file.maxSize,
+                maxFiles: config.logging.file.maxFiles,
+                format: winston.format.combine(
+                    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+                    winston.format.errors({ stack: true }),
+                    winston.format.json()
+                )
+            }));
+
+            // Debug log file (development only)
+            if (process.env.NODE_ENV === 'development') {
+                transports.push(new winston.transports.File({
+                    filename: path.join(config.logging.file.path, 'debug.log'),
+                    level: 'debug',
+                    maxsize: config.logging.file.maxSize,
+                    maxFiles: config.logging.file.maxFiles,
+                    format: winston.format.combine(
+                        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+                        winston.format.errors({ stack: true }),
+                        winston.format.json()
+                    )
+                }));
             }
         }
+
+        return winston.createLogger({
+            level: config.logging.level,
+            format: winston.format.combine(
+                winston.format.timestamp(),
+                winston.format.errors({ stack: true }),
+                winston.format.metadata({ fillExcept: ['message', 'level', 'timestamp'] })
+            ),
+            transports,
+            exitOnError: false
+        });
     }
 
-    async logModeration(guild, action, user, reason, details = {}) {
-        const fields = [
-            { name: '👤 User', value: `${user.tag}\n${user.id}`, inline: true },
-            { name: '⚡ Action', value: action.toUpperCase(), inline: true },
-            { name: '🧠 AI System', value: `Enhanced Synthia v${config.aiVersion}`, inline: true },
-            { name: '📝 Reason', value: reason || 'No reason provided', inline: false }
-        ];
+    debug(message, meta = {}) {
+        this.winston.debug(message, { component: this.component, ...meta });
+    }
 
-        if (details.originalLanguage && details.originalLanguage !== 'English') {
-            fields.push(
-                { name: '🌍 Original Language', value: details.originalLanguage, inline: true },
-                { name: '🔄 Translation Provider', value: details.provider || 'Multi-API', inline: true }
-            );
-        }
+    info(message, meta = {}) {
+        this.winston.info(message, { component: this.component, ...meta });
+    }
 
-        if (details.elongatedWords && details.elongatedWords.length > 0) {
-            fields.push({
-                name: '🔍 Elongated Words Detected',
-                value: details.elongatedWords.map(w => `${w.original} → ${w.normalized}`).join('\n').slice(0, 1024),
-                inline: false
+    warn(message, meta = {}) {
+        this.winston.warn(message, { component: this.component, ...meta });
+    }
+
+    error(message, meta = {}) {
+        if (message instanceof Error) {
+            this.winston.error(message.message, { 
+                component: this.component, 
+                error: message,
+                stack: message.stack,
+                ...meta 
             });
+        } else {
+            this.winston.error(message, { component: this.component, ...meta });
         }
-
-        await this.sendLog(
-            guild,
-            'moderation',
-            `⚖️ Enhanced Moderation: ${action.toUpperCase()}`,
-            `Multi-API enhanced moderation action taken`,
-            fields,
-            config.colors.moderation
-        );
     }
 
-    async logTranslation(guild, originalText, translatedText, sourceLang, targetLang, user, provider, responseTime, isAutoTranslation = false) {
-        const fields = [
-            { name: '👤 User', value: `${user.tag} (${user.id})`, inline: true },
-            { name: '🌍 Translation', value: `${sourceLang} → ${targetLang}`, inline: true },
-            { name: '🔧 Provider', value: provider, inline: true },
-            { name: '⚡ Response Time', value: `${responseTime}ms`, inline: true },
-            { name: '🤖 Type', value: isAutoTranslation ? 'Auto-Translation' : 'Manual Translation', inline: true },
-            { name: '📝 Original Text', value: originalText.slice(0, 500), inline: false },
-            { name: '🌟 Translated Text', value: translatedText.slice(0, 500), inline: false }
-        ];
+    // Specialized logging methods
+    logUserAction(userId, action, details = {}) {
+        this.info(`User action: ${action}`, {
+            userId,
+            action,
+            details,
+            type: 'user_action'
+        });
+    }
 
-        await this.sendLog(
-            guild,
-            'translation',
-            `🌍 Enhanced ${isAutoTranslation ? 'Auto-' : ''}Translation`,
-            `Advanced ${isAutoTranslation ? 'automatic ' : ''}translation with provider rotation`,
-            fields,
-            config.colors.translation
-        );
+    logGuildEvent(guildId, event, details = {}) {
+        this.info(`Guild event: ${event}`, {
+            guildId,
+            event,
+            details,
+            type: 'guild_event'
+        });
+    }
+
+    logModerationAction(guildId, userId, moderatorId, action, reason = null) {
+        this.info(`Moderation action: ${action}`, {
+            guildId,
+            userId,
+            moderatorId,
+            action,
+            reason,
+            type: 'moderation'
+        });
+    }
+
+    logCommandUsage(userId, guildId, command, args = []) {
+        this.info(`Command executed: ${command}`, {
+            userId,
+            guildId,
+            command,
+            args,
+            type: 'command'
+        });
+    }
+
+    logAIInteraction(userId, guildId, interactionType, details = {}) {
+        this.info(`AI interaction: ${interactionType}`, {
+            userId,
+            guildId,
+            interactionType,
+            details,
+            type: 'ai_interaction'
+        });
+    }
+
+    logPerformanceMetric(metric, value, unit = null) {
+        this.debug(`Performance metric: ${metric}`, {
+            metric,
+            value,
+            unit,
+            type: 'performance'
+        });
+    }
+
+    logSecurityEvent(event, severity, details = {}) {
+        const logLevel = severity === 'high' ? 'error' : severity === 'medium' ? 'warn' : 'info';
+        this[logLevel](`Security event: ${event}`, {
+            event,
+            severity,
+            details,
+            type: 'security'
+        });
+    }
+
+    logAPICall(service, endpoint, responseTime, success = true) {
+        this.debug(`API call: ${service}/${endpoint}`, {
+            service,
+            endpoint,
+            responseTime,
+            success,
+            type: 'api_call'
+        });
+    }
+
+    logDatabaseOperation(operation, table, duration, success = true) {
+        this.debug(`Database operation: ${operation} on ${table}`, {
+            operation,
+            table,
+            duration,
+            success,
+            type: 'database'
+        });
+    }
+
+    // Structured logging for analytics
+    logAnalyticsEvent(eventType, data) {
+        this.info(`Analytics event: ${eventType}`, {
+            eventType,
+            data,
+            type: 'analytics'
+        });
+    }
+
+    // Error handling and debugging
+    logError(error, context = {}) {
+        if (error instanceof Error) {
+            this.error(error.message, {
+                error: {
+                    name: error.name,
+                    message: error.message,
+                    stack: error.stack
+                },
+                context,
+                type: 'error'
+            });
+        } else {
+            this.error(error, { context, type: 'error' });
+        }
+    }
+
+    logCriticalError(error, context = {}) {
+        this.error(`CRITICAL ERROR: ${error.message || error}`, {
+            error: error instanceof Error ? {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+            } : error,
+            context,
+            type: 'critical_error',
+            timestamp: new Date().toISOString()
+        });
+    }
+
+    // System monitoring
+    logSystemStatus(status, details = {}) {
+        this.info(`System status: ${status}`, {
+            status,
+            details,
+            type: 'system_status'
+        });
+    }
+
+    logResourceUsage(cpu, memory, connections) {
+        this.debug('Resource usage', {
+            cpu: `${cpu}%`,
+            memory: `${memory}MB`,
+            connections,
+            type: 'resource_usage'
+        });
+    }
+
+    // Plugin logging
+    logPluginEvent(pluginName, event, data = {}) {
+        this.info(`Plugin event: ${pluginName}/${event}`, {
+            pluginName,
+            event,
+            data,
+            type: 'plugin'
+        });
+    }
+
+    // Rate limiting and spam detection
+    logRateLimit(userId, action, limit) {
+        this.warn(`Rate limit exceeded: ${action}`, {
+            userId,
+            action,
+            limit,
+            type: 'rate_limit'
+        });
+    }
+
+    logSpamDetection(userId, guildId, reason, details = {}) {
+        this.warn(`Spam detected: ${reason}`, {
+            userId,
+            guildId,
+            reason,
+            details,
+            type: 'spam_detection'
+        });
+    }
+
+    // Translation logging
+    logTranslation(sourceLang, targetLang, provider, success = true) {
+        this.debug(`Translation: ${sourceLang} -> ${targetLang}`, {
+            sourceLang,
+            targetLang,
+            provider,
+            success,
+            type: 'translation'
+        });
+    }
+
+    // WebSocket and real-time events
+    logWebSocketEvent(event, socketId, data = {}) {
+        this.debug(`WebSocket event: ${event}`, {
+            event,
+            socketId,
+            data,
+            type: 'websocket'
+        });
+    }
+
+    // Performance profiling
+    startTimer(label) {
+        return {
+            label,
+            startTime: Date.now(),
+            end: () => {
+                const duration = Date.now() - this.startTime;
+                this.logPerformanceMetric(label, duration, 'ms');
+                return duration;
+            }
+        };
+    }
+
+    // Batch logging for high-frequency events
+    createBatchLogger(flushInterval = 5000) {
+        const batch = [];
+        
+        setInterval(() => {
+            if (batch.length > 0) {
+                this.info(`Batch log (${batch.length} entries)`, {
+                    batch: [...batch],
+                    type: 'batch'
+                });
+                batch.length = 0;
+            }
+        }, flushInterval);
+
+        return {
+            add: (level, message, meta = {}) => {
+                batch.push({
+                    timestamp: new Date().toISOString(),
+                    level,
+                    message,
+                    meta: { component: this.component, ...meta }
+                });
+            },
+            flush: () => {
+                if (batch.length > 0) {
+                    this.info(`Manual batch flush (${batch.length} entries)`, {
+                        batch: [...batch],
+                        type: 'batch'
+                    });
+                    batch.length = 0;
+                }
+            }
+        };
+    }
+
+    // Log rotation and cleanup
+    async rotateLogs() {
+        if (!config.logging.file.enabled) return;
+
+        try {
+            const logDir = config.logging.file.path;
+            const files = await fs.readdir(logDir);
+            const logFiles = files.filter(file => file.endsWith('.log'));
+
+            for (const file of logFiles) {
+                const filePath = path.join(logDir, file);
+                const stats = await fs.stat(filePath);
+                const ageInDays = (Date.now() - stats.mtime.getTime()) / (1000 * 60 * 60 * 24);
+
+                if (ageInDays > config.logging.file.maxFiles) {
+                    await fs.remove(filePath);
+                    this.info(`Rotated old log file: ${file}`);
+                }
+            }
+        } catch (error) {
+            this.error('Failed to rotate logs:', error);
+        }
+    }
+
+    // Get log statistics
+    async getLogStats() {
+        if (!config.logging.file.enabled) {
+            return { error: 'File logging not enabled' };
+        }
+
+        try {
+            const logDir = config.logging.file.path;
+            const files = await fs.readdir(logDir);
+            const logFiles = files.filter(file => file.endsWith('.log'));
+            
+            let totalSize = 0;
+            const fileStats = [];
+
+            for (const file of logFiles) {
+                const filePath = path.join(logDir, file);
+                const stats = await fs.stat(filePath);
+                totalSize += stats.size;
+                
+                fileStats.push({
+                    name: file,
+                    size: stats.size,
+                    modified: stats.mtime,
+                    age: Math.floor((Date.now() - stats.mtime.getTime()) / (1000 * 60 * 60 * 24))
+                });
+            }
+
+            return {
+                totalFiles: logFiles.length,
+                totalSize: totalSize,
+                files: fileStats
+            };
+        } catch (error) {
+            this.error('Failed to get log stats:', error);
+            return { error: error.message };
+        }
     }
 }
 
-module.exports = EnhancedDiscordLogger;
+module.exports = Logger;
